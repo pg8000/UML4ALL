@@ -2,7 +2,21 @@
 
 Un editor web per trasformare testo in diagrammi di rete, architetture logiche e flussi di lavoro. Anteprima automatica, gruppi annidati, errori con numero di riga, importazione e salvataggio `.ret`, esportazione SVG, zoom e guida integrata.
 
-**Prototipo 0.1.** Sintassi propria ispirata all’esperienza di PlantUML; non compatibile con il linguaggio PlantUML e non implementa lo standard UML completo.
+**Prototipo 0.1.** Linguaggio testuale dedicato a reti, architetture e processi, con layout automatico di base.
+
+## Guida all’uso
+
+Apri [UML4ALL online](https://pg8000.github.io/UML4ALL/). Il pulsante **Guida all’uso**, in alto a destra, contiene istruzioni, esempi completi e suggerimenti per correggere gli errori.
+
+1. Scegli uno schema dal menu **Parti da un esempio** oppure incolla il tuo codice nel pannello **Sorgente**.
+2. Modifica il testo: con **Anteprima live** attiva il diagramma si aggiorna automaticamente. Per generarlo manualmente, disattiva l’anteprima live e premi **Genera** o **Ctrl+Invio** (**Cmd+Invio** su Mac).
+3. Usa **+**, **−** e **⤢** per ingrandire, ridurre e adattare il diagramma al riquadro.
+4. Premi **Salva codice** per scaricare il progetto modificabile in formato `.ret`. **Apri codice** riapre i file `.ret` o `.txt`. Con il cursore nell’editor puoi salvare anche con **Ctrl+S** o **Cmd+S**.
+5. Premi **Esporta SVG** per scaricare un’immagine vettoriale del diagramma. Il codice deve essere valido e l’anteprima aggiornata.
+
+Il salvataggio automatico conserva solo l’ultimo testo nel browser corrente. Scegliere un esempio o aprire un file sostituisce il testo: usa **Salva codice** per conservare ciascun progetto.
+
+Se il codice contiene un errore, il messaggio sotto l’editor indica la riga interessata. Controlla gli identificatori dei collegamenti, eventuali nomi duplicati, le virgolette e le parentesi di chiusura. Durante la correzione l’anteprima mantiene l’ultima versione valida, se disponibile.
 
 ## Aprire l’editor
 
@@ -54,3 +68,4 @@ Proprietà dentro un elemento: `ip`, `subnet`, `vlan`, `protocol`, `owner`, `not
 Limite di 100.000 caratteri, 250 elementi, 500 collegamenti e 12 livelli di gruppi. Layout gerarchico deterministico con gestione dei cicli; il motore non garantisce l’assenza di incroci o sovrapposizioni di etichette nei grafi densi. Forme stilizzate per tipo, non simboli di rete certificati. Non include diagrammi di sequenza/classi, posizionamento manuale o collaborazione multiutente.
 
 `engine.js` contiene parser, disposizione e generazione SVG; `app.js` le interazioni; `examples.js` gli esempi. Nessuna dipendenza da installare. Per verificare il motore: `npm test` oppure `node --test tests/engine.test.cjs`.
+
