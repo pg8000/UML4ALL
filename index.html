@@ -15,7 +15,7 @@
   <header class="masthead">
     <a class="brand" href="./" aria-label="UML4ALL, pagina iniziale"><span class="brand-icon" aria-hidden="true">⌘</span> UML4ALL<span class="beta">LAB</span></a>
     <span class="tagline">Metti in chiaro le connessioni.</span>
-    <button id="help-button" class="quiet">Guida alla sintassi <span aria-hidden="true">↗</span></button>
+    <button id="help-button" class="quiet">Guida all’uso <span aria-hidden="true">↗</span></button>
   </header>
   <main>
     <section class="intro"><div><p class="eyebrow">IL TUO PROSSIMO SCHEMA INIZIA QUI</p><h1>Scrivi le idee.<br class="mobile-break"> Guarda le connessioni.</h1><p>Reti, architetture e processi. Un linguaggio semplice, un diagramma che prende forma.</p></div><div class="local-badge"><span></span> Elaborazione nel tuo browser</div></section>
@@ -30,7 +30,15 @@
     <section class="hints" aria-label="Suggerimenti"><div><span class="hint-number">01</span><div><strong>Descrivi gli elementi</strong><p><code>server app "Applicazione"</code></p></div></div><div><span class="hint-number">02</span><div><strong>Traccia le connessioni</strong><p><code>app -> db : SQL</code></p></div></div><div><span class="hint-number">03</span><div><strong>Dai un contesto</strong><p>Raggruppa con <code>zone "Nome" { … }</code></p></div></div></section>
   </main>
   <footer class="site-footer"><span>UML4ALL / un linguaggio per vedere meglio</span><span>Salvataggio locale automatico · nessun account richiesto</span></footer>
-  <dialog id="help"><div class="dialog-heading"><div><p class="eyebrow">PICCOLO LINGUAGGIO, GRANDI CONNESSIONI</p><h2>La sintassi, in breve.</h2></div><button id="close-help" aria-label="Chiudi guida">✕</button></div><p>UML4ALL ha una propria sintassi: non interpreta il codice PlantUML. Una dichiarazione per riga; parentesi graffe su righe dedicate, salvo l’apertura di diagrammi, gruppi ed elementi.</p><pre>diagram "Il mio schema" {
+  <dialog id="help" aria-labelledby="help-title"><div class="dialog-heading"><div><p class="eyebrow">DAL PRIMO SCHEMA AL DIAGRAMMA FINITO</p><h2 id="help-title">Guida all’uso di UML4ALL</h2></div><button id="close-help" aria-label="Chiudi guida">✕</button></div>
+    <p>Scrivi gli elementi e le loro connessioni nel pannello a sinistra: il diagramma prende forma nel pannello a destra. Tutta l’elaborazione avviene nel tuo browser.</p>
+    <h3>1. Crea il primo diagramma</h3>
+    <ol><li>Scegli un esempio dal menu <strong>Parti da un esempio</strong>: rete, flusso di approvazione, architettura logica o schema essenziale.</li><li>Modifica o incolla il codice nel pannello <strong>Sorgente</strong>. Con <strong>Anteprima live</strong> attiva, il diagramma si aggiorna mentre scrivi.</li><li>Per aggiornare il disegno manualmente, disattiva l’anteprima live e premi <strong>Genera</strong> oppure <strong>Ctrl+Invio</strong> (<strong>Cmd+Invio</strong> su Mac).</li><li>Usa <strong>+</strong> e <strong>−</strong> per lo zoom e <strong>⤢</strong> per adattare l’intero diagramma al riquadro.</li></ol>
+    <h3>2. Salva, riapri ed esporta</h3>
+    <ul><li><strong>Salva codice</strong> scarica un file <code>.ret</code> modificabile. Puoi usare anche <strong>Ctrl+S</strong> o <strong>Cmd+S</strong> quando il cursore è nell’editor.</li><li><strong>Apri codice</strong> importa un file <code>.ret</code> o <code>.txt</code>.</li><li><strong>Esporta SVG</strong> scarica il diagramma come immagine vettoriale, utilizzabile in documenti e presentazioni. Il pulsante si attiva quando il codice è valido e l’anteprima è aggiornata.</li><li>Il salvataggio automatico conserva l’ultimo codice in questo browser, quando consentito. Per conservare più progetti, scarica un file <code>.ret</code> per ciascuno. Scegliere un esempio o aprire un file sostituisce il codice corrente: salvalo prima, se vuoi conservarlo.</li></ul>
+    <h3>3. Scrivi uno schema di rete</h3>
+    <p>Il diagramma ha un titolo, elementi con identificatori unici e collegamenti. <code>app</code> è l’identificatore usato nelle connessioni; <code>"API"</code> è il testo visibile nel disegno. I gruppi <code>zone</code> raccolgono gli elementi di una stessa area.</p>
+    <p>Usa una dichiarazione per riga. Apri un blocco con <code>{</code> alla fine della dichiarazione e chiudilo con <code>}</code> su una riga dedicata.</p><pre>diagram "Il mio schema" {
   direction right
   zone "Applicazioni" {
     server app "API" {
@@ -40,7 +48,28 @@
     database db "Archivio"
   }
   app -> db : SQL
-}</pre><h3>Elementi disponibili</h3><p><code>cloud</code>, <code>router</code>, <code>firewall</code>, <code>switch</code>, <code>network</code>, <code>server</code>, <code>database</code>, <code>service</code>, <code>actor</code>, <code>task</code>, <code>decision</code>, <code>start</code>, <code>end</code>, <code>node</code>.</p><h3>Gruppi, collegamenti e dettagli</h3><ul><li><code>zone "Nome" {</code> e <code>group "Nome" {</code> creano gruppi annidati.</li><li><code>a -> b -> c</code> collega una sequenza. <code>a &lt;-> b</code> è bidirezionale; <code>a -- b</code> non ha frecce; <code>a --> b</code> è tratteggiato.</li><li><code>a -> b : Etichetta</code> aggiunge una descrizione al collegamento.</li><li><code>direction right</code> oppure <code>direction down</code> sceglie l’orientamento per tutto il diagramma.</li><li>Proprietà dentro un elemento: <code>ip</code>, <code>subnet</code>, <code>vlan</code>, <code>protocol</code>, <code>owner</code>, <code>note</code>, <code>color</code> (es. <code>"#dbeafe"</code>).</li><li>Identificatori: lettere, numeri, trattino e underscore; primo carattere una lettera o underscore. Etichette fra virgolette; <code>\n</code> per andare a capo.</li><li>Commenti su una riga con <code>//</code> oppure <code>#</code>. I riferimenti possono precedere le dichiarazioni.</li></ul><p class="help-note">Prototipo 0.1: layout automatico di base. Nei grafi molto densi alcuni collegamenti possono incrociarsi. Fino a 250 elementi e 500 collegamenti.</p></dialog>
+}</pre>
+    <h3>4. Disegna un flusso di lavoro</h3>
+    <p>Usa <code>start</code> e <code>end</code> per inizio e fine, <code>task</code> per le attività e <code>decision</code> per una scelta. Scrivi gli esiti sui collegamenti dopo i due punti.</p><pre>diagram "Approvazione" {
+  direction down
+  start inizio "Inizio"
+  task richiesta "Invia richiesta"
+  decision verifica "Approvata?"
+  task esegui "Esegui attività"
+  end fine "Fine"
+
+  inizio -> richiesta -> verifica
+  verifica -> esegui : sì
+  verifica -> fine : no
+  esegui -> fine
+}</pre>
+    <h3>5. Consulta la sintassi</h3>
+    <p><strong>Elementi disponibili:</strong> <code>cloud</code>, <code>router</code>, <code>firewall</code>, <code>switch</code>, <code>network</code>, <code>server</code>, <code>database</code>, <code>service</code>, <code>actor</code>, <code>task</code>, <code>decision</code>, <code>start</code>, <code>end</code>, <code>node</code>.</p>
+    <ul><li><code>zone "Nome" {</code> e <code>group "Nome" {</code> creano gruppi annidati. Collega gli elementi contenuti usando i loro identificatori.</li><li><code>a -> b -> c</code> collega una sequenza. <code>a &lt;-> b</code> è bidirezionale; <code>a -- b</code> non ha frecce; <code>a --> b</code> è tratteggiato.</li><li><code>a -> b : Etichetta</code> aggiunge una descrizione al collegamento. Usa le virgolette per etichette con caratteri speciali.</li><li><code>direction right</code> oppure <code>direction down</code> sceglie l’orientamento per tutto il diagramma.</li><li>Proprietà dentro un elemento: <code>ip</code>, <code>subnet</code>, <code>vlan</code>, <code>protocol</code>, <code>owner</code>, <code>note</code>, <code>color</code>. Scrivi <code>nome = "valore"</code> su una riga; per esempio <code>vlan = "10"</code> o <code>color = "#dbeafe"</code>. Le proprietà di rete sono descrittive.</li><li>Identificatori: lettere ASCII, numeri, trattino e underscore; primo carattere una lettera o underscore. Etichette fra virgolette; <code>\n</code> per andare a capo.</li><li>Commenti su una riga con <code>//</code> oppure <code>#</code>. Puoi scrivere i collegamenti prima delle dichiarazioni, purché tutti gli elementi siano dichiarati nel diagramma.</li></ul>
+    <h3>6. Correggi gli errori</h3>
+    <ul><li><strong>Elemento non dichiarato:</strong> controlla che l’identificatore usato nel collegamento corrisponda a un elemento dichiarato.</li><li><strong>Identificatore duplicato:</strong> assegna un identificatore diverso a ciascun elemento, anche se si trova in un altro gruppo.</li><li><strong>Parentesi o virgolette mancanti:</strong> chiudi ogni blocco con <code>}</code> e ogni etichetta con le virgolette.</li><li>Il messaggio sotto l’editor indica la riga da controllare. Se esiste una versione valida precedente, l’anteprima continua a mostrarla finché il codice non viene corretto.</li></ul>
+    <p class="help-note">Prototipo 0.1: layout automatico di base. Nei grafi molto densi alcuni collegamenti possono incrociarsi. Fino a 250 elementi e 500 collegamenti. Chiudi la guida con <strong>✕</strong> o con il tasto <strong>Esc</strong>.</p>
+  </dialog>
 </body>
 </html>
 
