@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#172c29">
   <meta name="description" content="UML4ALL: diagrammi di rete, architetture e flussi di lavoro dal testo, direttamente nel browser.">
   <title>UML4ALL — dal testo al diagramma</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=0.1.1">
   <script src="engine.js" defer></script>
   <script src="examples.js" defer></script>
   <script src="app.js" defer></script>
@@ -43,3 +43,4 @@
 }</pre><h3>Elementi disponibili</h3><p><code>cloud</code>, <code>router</code>, <code>firewall</code>, <code>switch</code>, <code>network</code>, <code>server</code>, <code>database</code>, <code>service</code>, <code>actor</code>, <code>task</code>, <code>decision</code>, <code>start</code>, <code>end</code>, <code>node</code>.</p><h3>Gruppi, collegamenti e dettagli</h3><ul><li><code>zone "Nome" {</code> e <code>group "Nome" {</code> creano gruppi annidati.</li><li><code>a -> b -> c</code> collega una sequenza. <code>a &lt;-> b</code> è bidirezionale; <code>a -- b</code> non ha frecce; <code>a --> b</code> è tratteggiato.</li><li><code>a -> b : Etichetta</code> aggiunge una descrizione al collegamento.</li><li><code>direction right</code> oppure <code>direction down</code> sceglie l’orientamento per tutto il diagramma.</li><li>Proprietà dentro un elemento: <code>ip</code>, <code>subnet</code>, <code>vlan</code>, <code>protocol</code>, <code>owner</code>, <code>note</code>, <code>color</code> (es. <code>"#dbeafe"</code>).</li><li>Identificatori: lettere, numeri, trattino e underscore; primo carattere una lettera o underscore. Etichette fra virgolette; <code>\n</code> per andare a capo.</li><li>Commenti su una riga con <code>//</code> oppure <code>#</code>. I riferimenti possono precedere le dichiarazioni.</li></ul><p class="help-note">Prototipo 0.1: layout automatico di base. Nei grafi molto densi alcuni collegamenti possono incrociarsi. Fino a 250 elementi e 500 collegamenti.</p></dialog>
 </body>
 </html>
+
