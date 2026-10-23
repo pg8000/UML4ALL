@@ -3,7 +3,13 @@
   'use strict';
   const TYPES = new Set('cloud router firewall switch network server database service actor task decision start end node'.split(' '));
   const PROPS = new Set('ip subnet vlan protocol owner note color'.split(' '));
+  const LIMITS = Object.freeze({ source: 100000, lines: 5000, line: 4096, nodes: 250, edges: 500, groups: 100, label: 300, property: 500, identifier: 64, svg: 2000000 });
   const fail = (line, message) => { const e = new Error(message); e.line = line; throw e; };
+  function checkedText(value, line, max = LIMITS.label) {
+    if (value.length > max) fail(line, 'Testo troppo lungo (massimo ' + max + ' caratteri).');
+    if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\ufffe\uffff]/u.test(value)) fail(line, 'Il testo contiene caratteri di controllo non consentiti.');
+    return value;
+  }
   function tokenize(line, number) {
     const tokens = []; let i = 0;
     while (i < line.length) {
@@ -23,18 +29,22 @@
     return tokens;
   }
   function parse(source) {
-    if (source.length > 100000) fail(1, 'Il codice supera il limite di 100.000 caratteri.');
+    if (typeof source !== 'string') fail(1, 'Il codice deve essere testo.');
+    if (source.length > LIMITS.source) fail(1, 'Il codice supera il limite di 100.000 caratteri.');
     const model = { title: '', direction: 'right', nodes: [], edges: [], children: [], line: 1 };
-    const ids = new Map(), stack = []; let opened = false, closed = false;
+    const ids = new Map(), stack = []; let opened = false, closed = false, groups = 0;
     const lines = source.replace(/\r\n?/g, '\n').split('\n');
+    if (lines.length > LIMITS.lines) fail(1, 'Limite: 5.000 righe.');
     lines.forEach((line, index) => {
-      const n = index + 1, ts = tokenize(line, n), t = ts.map(x => x.value);
+      const n = index + 1;
+      if (line.length > LIMITS.line) fail(n, 'Riga troppo lunga (massimo 4.096 caratteri).');
+      const ts = tokenize(line, n), t = ts.map(x => x.value);
       if (!t.length) return;
       const is = (i, value) => ts[i] && !ts[i].quoted && t[i] === value;
       const id = i => ts[i] && !ts[i].quoted && /^[A-Za-z_][A-Za-z0-9_-]*$/.test(t[i]);
       if (!opened) {
         if (!(is(0, 'diagram') && ts[1]?.quoted && is(2, '{') && t.length === 3)) fail(n, 'Inizia con diagram "Titolo" {');
-        model.title = t[1]; opened = true; stack.push(model); return;
+        model.title = checkedText(t[1], n); opened = true; stack.push(model); return;
       }
       if (closed) fail(n, 'Codice dopo la chiusura del diagramma.');
       const parent = stack[stack.length - 1];
@@ -44,7 +54,7 @@
         if (!PROPS.has(t[0])) fail(n, 'Proprietà sconosciuta: ' + t[0]);
         if (Object.hasOwn(parent.props, t[0])) fail(n, 'Proprietà duplicata: ' + t[0]);
         if (t[0] === 'color' && !/^#[a-f0-9]{6}$/i.test(t[2])) fail(n, 'Il colore deve essere esadecimale, ad esempio "#dbeafe".');
-        parent.props[t[0]] = t[2]; return;
+        parent.props[t[0]] = checkedText(t[2], n, LIMITS.property); return;
       }
       if (is(0, 'direction')) {
         if (parent !== model || t.length !== 2 || !(is(1, 'right') || is(1, 'down'))) fail(n, 'Usa direction right oppure direction down nel diagramma.');
@@ -53,29 +63,34 @@
       if (is(0, 'zone') || is(0, 'group')) {
         if (!(t.length === 3 && ts[1].quoted && is(2, '{'))) fail(n, 'Gruppo atteso: zone "Nome" {');
         if (stack.length > 12) fail(n, 'Troppi gruppi annidati (massimo 12 livelli).');
-        const group = { type: 'group', label: t[1], children: [], parent, line: n };
+        if (++groups > LIMITS.groups) fail(n, 'Limite: 100 gruppi.');
+        const group = { type: 'group', label: checkedText(t[1], n), children: [], parent, line: n };
         parent.children.push(group); stack.push(group); return;
       }
       if (id(0) && ts[1] && !ts[1].quoted && ['->', '<->', '--', '-->'].includes(t[1])) {
         let p = 1; const added = [];
         while (p < t.length && !is(p, ':')) {
           if (!['->', '<->', '--', '-->'].includes(t[p]) || ts[p].quoted || !id(p + 1)) fail(n, 'Collegamento atteso: a -> b : etichetta');
+          if (model.edges.length + added.length >= LIMITS.edges) fail(n, 'Limite: 500 collegamenti.');
+          if (t[p - 1].length > LIMITS.identifier || t[p + 1].length > LIMITS.identifier) fail(n, 'Identificatore troppo lungo (massimo 64 caratteri).');
           added.push({ from: t[p - 1], to: t[p + 1], arrow: t[p], line: n, label: '' }); p += 2;
         }
         if (p < t.length) {
           if (p + 1 === t.length) fail(n, 'Manca l’etichetta dopo i due punti.');
-          const label = t.slice(p + 1).join(' '); added.forEach(e => { e.label = label; });
+          const label = checkedText(t.slice(p + 1).join(' '), n); added.forEach(e => { e.label = label; });
         }
         model.edges.push(...added); return;
       }
       if (id(0) && TYPES.has(t[0])) {
         if (!id(1)) fail(n, 'Manca un identificatore valido per l’elemento.');
+        if (t[1].length > LIMITS.identifier) fail(n, 'Identificatore troppo lungo (massimo 64 caratteri).');
+        if (model.nodes.length >= LIMITS.nodes) fail(n, 'Limite: 250 elementi.');
         let p = 2, label = t[1];
         if (ts[p]?.quoted) label = t[p++];
         let block = false; if (is(p, '{')) { block = true; p++; }
         if (p !== t.length) fail(n, 'Elemento atteso: ' + t[0] + ' id "Etichetta"');
         if (ids.has(t[1])) fail(n, 'Identificatore duplicato: ' + t[1]);
-        const node = { type: 'element', kind: t[0], id: t[1], label, props: {}, parent, line: n };
+        const node = { type: 'element', kind: t[0], id: t[1], label: checkedText(label, n), props: Object.create(null), parent, line: n };
         ids.set(node.id, node); model.nodes.push(node); parent.children.push(node); if (block) stack.push(node); return;
       }
       fail(n, 'Istruzione non riconosciuta: ' + t[0]);
@@ -141,8 +156,8 @@
     absolute(model, 0, 0); return model;
   }
   function render(source) {
-    const model = layout(parse(source)), parts = [];
-    const add = s => parts.push(s);
+    const model = layout(parse(source)), parts = []; let outputSize = 0;
+    const add = s => { outputSize += s.length; if (outputSize > LIMITS.svg) fail(1, 'Il diagramma generato supera il limite di 2 MB.'); parts.push(s); };
     add(`<svg xmlns="http://www.w3.org/2000/svg" width="${model.w}" height="${model.h}" viewBox="0 0 ${model.w} ${model.h}" role="img" aria-labelledby="diagram-title"><title id="diagram-title">${esc(model.title)}</title><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#6b8879" stroke-width="1.6"/></marker></defs><rect width="100%" height="100%" fill="#fcfdfb" rx="10"/>`);
     add(`<text x="35" y="29" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="600" fill="#284a3c">${esc(model.title)}</text>`);
     function groups(c, depth) { for (const g of c.children || []) if (g.type === 'group') { add(`<rect x="${g.ax}" y="${g.ay}" width="${g.w}" height="${g.h}" rx="12" fill="${depth % 2 ? '#f8faf5' : '#eff4eb'}" stroke="#c9d7c2" stroke-dasharray="5 4"/><text x="${g.ax + 17}" y="${g.ay + 25}" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="600" fill="#66805a">${esc(g.label)}</text>`); groups(g, depth + 1); } }
@@ -180,7 +195,7 @@
     labels.forEach(add); add('</svg>');
     return { svg: parts.join(''), model };
   }
-  const api = { parse, layout, render };
+  const api = Object.freeze({ parse, layout, render, LIMITS });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.UML4ALL = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

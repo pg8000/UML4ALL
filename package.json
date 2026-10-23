@@ -1,7 +1,7 @@
 {
   "name": "uml4all",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Editor di diagrammi di rete e processi dal testo, senza dipendenze",
-  "scripts": { "test": "node --test tests/engine.test.cjs", "start": "node serve.cjs" }
+  "scripts": { "test": "node --test tests/*.test.cjs", "start": "node serve.cjs" }
 }
