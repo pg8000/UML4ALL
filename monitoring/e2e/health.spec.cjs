@@ -61,7 +61,15 @@ test('live rendering, errors, safe export and input security', async ({ page }) 
   await page.locator('#export-button').click();
   const svgDownload = await svgDownloadEvent;
   const svg = await fs.readFile(await svgDownload.path(), 'utf8');
-  expect(svg).not.toMatch(/<(?:script|image|foreignObject|iframe)\b|\son\w+\s*=|(?:href|xlink:href)\s*=/i);
+  const svgSafety = await page.evaluate(value => {
+    UML4ALLSafeSVG.validate(value);
+    const doc = new DOMParser().parseFromString(value, 'image/svg+xml');
+    return {
+      activeElements: doc.querySelectorAll('script,image,foreignObject,iframe').length,
+      unsafeAttributes: [...doc.querySelectorAll('*')].some(el => [...el.attributes].some(a => /^on/i.test(a.name) || ['href', 'xlink:href', 'style'].includes(a.name)))
+    };
+  }, svg);
+  expect(svgSafety).toEqual({ activeElements: 0, unsafeAttributes: false });
   expect(svg).toContain('&lt;script&gt;');
   const retDownloadEvent = page.waitForEvent('download');
   await page.locator('#save-button').click();
