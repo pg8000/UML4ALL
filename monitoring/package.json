@@ -1,0 +1,6 @@
+{
+  "name": "uml4all-cloud-monitoring",
+  "private": true,
+  "version": "1.0.0",
+  "devDependencies": { "@playwright/test": "1.64.1" }
+}

@@ -1,2 +1,6 @@
 node_modules/
 *.zip
+monitoring/report/
+monitoring/test-results/
+monitoring/snapshots/
+monitoring/results.json

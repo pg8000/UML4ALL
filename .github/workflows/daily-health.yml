@@ -1,0 +1,92 @@
+name: UML4ALL cloud health
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+      timezone: Europe/Rome
+  workflow_dispatch:
+    inputs:
+      refresh_visual_baseline:
+        description: 'Accept new visual reference images after reviewing an intentional UI change'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: uml4all-cloud-health
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - name: Engine and security tests
+        run: node --test tests/*.test.cjs
+      - name: Install browser test tools
+        working-directory: monitoring
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install Chromium
+        working-directory: monitoring
+        run: npx playwright install --with-deps chromium
+      - name: Find previous visual reference
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REFRESH: ${{ inputs.refresh_visual_baseline || false }}
+        shell: bash
+        run: |
+          if [ "$REFRESH" = "true" ]; then
+            echo 'run_id=' >> "$GITHUB_OUTPUT"
+          else
+            run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=uml4all-visual-baseline&per_page=100" --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")][0].workflow_run.id // empty')
+            echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Restore visual reference
+        if: steps.baseline.outputs.run_id != ''
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: uml4all-visual-baseline
+          path: monitoring/snapshots
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.baseline.outputs.run_id }}
+      - name: Browser, security and visual checks
+        working-directory: monitoring
+        env:
+          CI: 'true'
+          BASELINE_RUN: ${{ steps.baseline.outputs.run_id }}
+        run: |
+          if [ -z "$BASELINE_RUN" ]; then
+            echo 'Creating initial or explicitly refreshed visual reference.' >> "$GITHUB_STEP_SUMMARY"
+            npx playwright test --update-snapshots
+          else
+            npx playwright test
+          fi
+      - name: Preserve successful visual reference
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: uml4all-visual-baseline
+          path: monitoring/snapshots
+          retention-days: 30
+          if-no-files-found: error
+      - name: Save test report and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: uml4all-cloud-report
+          path: |
+            monitoring/report
+            monitoring/test-results
+            monitoring/results.json
+          retention-days: 14
+          if-no-files-found: warn
