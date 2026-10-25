@@ -24,6 +24,10 @@ test('examples, layout and visual regression', async ({ page }, testInfo) => {
     await expect(page).toHaveScreenshot(value + '.png', { fullPage: true });
     await attachScreen(page, testInfo, value);
   }
+  if (test.info().project.name === 'mobile') {
+    const widths = await page.locator('.panels').evaluate(el => ({ panel: el.clientWidth, children: [...el.children].map(child => child.getBoundingClientRect().width) }));
+    for (const width of widths.children) expect(Math.abs(width - widths.panel)).toBeLessThanOrEqual(1);
+  }
   const initialZoom = await page.locator('#zoom-value').textContent();
   await page.locator('#zoom-in').click();
   await expect(page.locator('#zoom-value')).not.toHaveText(initialZoom);
