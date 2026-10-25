@@ -165,7 +165,8 @@
     const parts = []; let outputSize = 0;
     const add = s => { outputSize += s.length; if (outputSize > LIMITS.svg) fail(1, 'Il diagramma generato supera il limite di 2 MB.'); parts.push(s); };
     add(`<svg xmlns="http://www.w3.org/2000/svg" width="${model.w}" height="${model.h}" viewBox="0 0 ${model.w} ${model.h}" role="img" aria-labelledby="diagram-title"><title id="diagram-title">${esc(model.title)}</title><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#6b8879" stroke-width="1.6"/></marker></defs><rect width="100%" height="100%" fill="#fcfdfb" rx="10"/>`);
-    add(`<text x="35" y="29" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="600" fill="#284a3c">${esc(model.title)}</text>`);
+    model.headerLines = wrap(model.displayTitle || model.title, Math.max(12, Math.floor((model.w - 70) / 8)));
+    model.headerLines.forEach((line, i) => add(`<text x="35" y="${29 + i * 19}" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="600" fill="#284a3c">${esc(line)}</text>`));
     function groups(c, depth) { for (const g of c.children || []) if (g.type === 'group') { add(`<rect x="${g.ax}" y="${g.ay}" width="${g.w}" height="${g.h}" rx="12" fill="${depth % 2 ? '#f8faf5' : '#eff4eb'}" stroke="#c9d7c2" stroke-dasharray="5 4"/><text x="${g.ax + 17}" y="${g.ay + 25}" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="600" fill="#66805a">${esc(g.label)}</text>`); groups(g, depth + 1); } }
     groups(model, 0);
     const labels = [];

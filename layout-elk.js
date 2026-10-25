@@ -32,7 +32,7 @@
     if (selected.startsWith('group:')) {
       const group = groups.find(g => 'group:' + g.line === selected);
       if (!group) return { model: original, choices, notice: 'Il gruppo selezionato non esiste più. Vista completa.' };
-      base.title += ' / ' + group.label; base.direction = group.direction || original.direction;
+      base.title += ' / ' + group.label; base.displayTitle = group.label; base.direction = group.direction || original.direction;
       for (const child of group.children) copy(child, base, false);
     } else {
       for (const child of original.children) copy(child, base, child.type === 'group' && !child.children.some(c => c.type === 'group'));
@@ -88,6 +88,11 @@
       };
     }
     const input = graph(model, 'root', model.direction);
+    const title = model.displayTitle || model.title;
+    const titleWidth = Math.max(250, Math.min(600, title.length * 8 + 70));
+    const titleRows = engine.wrap(title, Math.max(12, Math.floor((titleWidth - 70) / 8))).length;
+    input.layoutOptions['elk.nodeSize.minimum'] = '(' + titleWidth + ',80)';
+    input.layoutOptions['elk.padding'] = '[top=' + Math.max(54, 25 + titleRows * 19) + ',left=30,bottom=30,right=30]';
     input.edges = model.edges.map((edge, i) => {
       const id = 'e' + i; edges.set(id, edge);
       const lines = engine.wrap(edge.label, 21);

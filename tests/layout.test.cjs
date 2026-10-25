@@ -71,3 +71,14 @@ test('real worker entry point initializes the bundled ELK without nested workers
   assert.equal(output.model.nodeCount,6);
   assert.ok(output.svg.startsWith('<svg'));
 });
+
+test('focused and long diagram titles fit the SVG header without covering nodes', async()=>{
+  const parsed=engine.parse(soc),group=parsed.children[0].children.find(g=>g.label==='Threat Hunting');
+  const focus=await render(soc,'group:'+group.line);
+  assert.deepEqual(focus.model.headerLines,['Threat Hunting']);
+  const long=await render('diagram "'+ 'Titolo molto lungo '.repeat(15).trim()+'" {\nnode a\n}');
+  assert.ok(long.model.headerLines.length>1);
+  const lastBaseline=29+(long.model.headerLines.length-1)*19;
+  assert.ok(long.model.nodes[0].ay>lastBaseline+10);
+  for(const line of long.model.headerLines) assert.ok(line.length*8<=long.model.w-70);
+});
