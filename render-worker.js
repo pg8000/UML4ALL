@@ -1,10 +1,11 @@
-/* Expensive parsing/layout stays off the page's UI thread. */
+/* Layout and SVG construction stay inside a disposable worker with a 3s deadline. */
 'use strict';
-importScripts('engine.js?v=0.2.0');
-self.onmessage = event => {
+importScripts('engine.js?v=0.4.0', 'vendor/elk-0.12.0.js', 'layout-elk.js?v=0.4.0');
+self.onmessage = async event => {
   try {
-    const { svg, model } = UML4ALL.render(event.data);
-    self.postMessage({ ok: true, svg, model: { title: model.title, w: model.w, h: model.h, nodeCount: model.nodes.length, edgeCount: model.edges.length } });
+    const request = typeof event.data === 'string' ? { source: event.data, view: 'auto' } : event.data;
+    const { svg, model, choices, notice } = await UML4ALLLayout.render(request.source, request.view);
+    self.postMessage({ ok: true, svg, choices, notice, model: { title: model.title, w: model.w, h: model.h, nodeCount: model.nodes.length, edgeCount: model.edges.length } });
   } catch (error) {
     self.postMessage({ ok: false, error: { message: String(error.message).slice(0, 500), line: error.line } });
   }

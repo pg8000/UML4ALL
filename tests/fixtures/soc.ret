@@ -1,0 +1,185 @@
+diagram "Cyber Security Operations Center" {
+  direction down
+  layout layered
+  spacing compact
+  group "Cyber Security Operations Center" {
+    group "SOC Monitoring (L1/L2/L3)" {
+      node M2 "Triage L1" {
+        color = "#ffe3cc"
+      }
+      node M3 "Escalation tecnica L2/L3 / Preparazione segnalazione" {
+        color = "#ffe3cc"
+      }
+      node M4 "Chiusura ticket" {
+        color = "#ffe3cc"
+      }
+    }
+    group "SOC Quality" {
+      node Q1 "Verifica chiusure incident" {
+        color = "#fff4b3"
+      }
+      node Q2 "Aggiornamento knowledge base / runbook" {
+        color = "#fff4b3"
+      }
+      node Q3 "Coaching / feedback operativi" {
+        color = "#fff4b3"
+      }
+      node Q4 "Report periodici di qualità / KPI" {
+        color = "#fff4b3"
+      }
+    }
+    group "Communication Coordinator" {
+      node C2 "Invio segnalazione strutturata a IT/IR + referenti IT" {
+        color = "#ffd9d9"
+      }
+      node C3 "Raccolta feedback / esiti / fix richiesti" {
+        color = "#ffd9d9"
+      }
+      node C4 "Tracciamento / archiviazione" {
+        color = "#ffd9d9"
+      }
+    }
+    group "SOC Management" {
+      node G1 "Supervisione attività operative" {
+        color = "#fff4b3"
+      }
+      node G2 "Controllo KPI e analisi dati" {
+        color = "#fff4b3"
+      }
+      node G3 "Revisione e adeguamento procedure / flussi operativi" {
+        color = "#fff4b3"
+      }
+      node G4 "Validazione e pianificazione miglioramenti" {
+        color = "#fff4b3"
+      }
+      node G5 "Report strategici" {
+        color = "#fff4b3"
+      }
+    }
+    group "Detection & Platform Engineering" {
+      node DE1 "Onboarding log & integrazioni" {
+        color = "#ffe3cc"
+      }
+      node DE2 "Tuning regole SIEM/UEBA" {
+        color = "#ffe3cc"
+      }
+      node DE3 "Automazioni SOAR (watchlist IOC, enrichment)" {
+        color = "#ffe3cc"
+      }
+      node DE4 "Analytics custom / modifiche" {
+        color = "#ffe3cc"
+      }
+      node DE5 "Data quality & health" {
+        color = "#ffe3cc"
+      }
+    }
+    group "Threat Hunting" {
+      node TH1 "Ingest fonti interne/esterne + analisi TTP" {
+        color = "#dce6ff"
+      }
+      node TH2 "Validazione e correlazione" {
+        color = "#dce6ff"
+      }
+      node TH3 "Ipotesi di hunting" {
+        color = "#dce6ff"
+      }
+      node TH4 "Investigazione" {
+        color = "#dce6ff"
+      }
+      node TH5 "Gap analysis & proposte di detection" {
+        color = "#dce6ff"
+      }
+    }
+    group "Data Analyst" {
+      node D1 "Raccolta dati e modellazione" {
+        color = "#fff4b3"
+      }
+      node D2 "Analisi trend e KPI" {
+        color = "#fff4b3"
+      }
+      node D3 "Creazione dashboard e workbook" {
+        color = "#fff4b3"
+      }
+    }
+  }
+  group "IT/IR Esterno" {
+    node PROTECT_EXT "Controlli preventivi (Hardening, Patch, IAM, Awareness)" {
+      color = "#eddcff"
+    }
+    node IR_EXT "Incident Response (IT / Fornitori)" {
+      color = "#ffd9d9"
+    }
+    node REG_NOTIFY "Notifiche regolamentari\n(CSIRT/ACN/Autorità)" {
+      color = "#ffd9d9"
+    }
+    node REC_ACT "Remediation & Restore (IT / Fornitori)" {
+      color = "#d5f5df"
+    }
+  }
+  node CTIEXT "CTI Provider (Intelligence / Feed)"
+  node STKH "Stakeholder / Direzione"
+  group "Legenda" {
+    group "Flussi Comunicativi" {
+      node f1 " "
+      node f2 " "
+      node i1 " "
+      node i2 " "
+    }
+    group "NIST CSF 2.0" {
+      node GId "Identify"
+      node GDet "Detect"
+      node GPro "Protect"
+      node GRes "Respond"
+      node GGov "Govern"
+      node GRec "Recover"
+    }
+  }
+  f1 -> f2 : "Operativo"
+  i1 --> i2 : "Informativo"
+  TH1 -> TH2
+  TH2 -> TH3
+  TH2 -> DE3
+  TH3 -> TH4
+  TH4 -> TH5
+  TH4 -> M3 : "Incident ed escalation"
+  TH5 <-> DE2 : "Candidate detection"
+  DE1 -> DE2
+  DE2 -> DE3
+  DE3 -> DE4
+  DE4 -> DE5
+  M2 -> M3
+  M3 -> M4
+  M4 -> Q1
+  C2 -> C3
+  C3 -> C4
+  C3 -> M4
+  C3 -> DE2
+  Q1 -> Q2
+  Q1 -> Q4
+  Q2 -> Q3
+  Q2 --> DE2 : "Lesson learned / gap"
+  Q3 -> M2
+  Q3 -> M3
+  Q4 --> D1 : "Report qualità / KPI"
+  D1 -> D2
+  D2 -> D3
+  D3 --> G2 : "Dashboard / trend / KPI"
+  G1 -> G2
+  G2 -> G3
+  G3 -> G4
+  G4 -> G5
+  CTIEXT --> TH1 : "Bollettini CTI"
+  DE2 -> M2 : "Regole aggiornate"
+  DE4 -> M2 : "Nuove analytics"
+  M3 --> C2 : "Richiesta segnalazione esterna"
+  C2 -> IR_EXT : "Richiesta intervento esterno / segnalazione"
+  IR_EXT -> REC_ACT
+  IR_EXT -> REG_NOTIFY
+  IR_EXT -> PROTECT_EXT
+  IR_EXT -> C3 : "Feedback / esiti intervento"
+  M3 --> IR_EXT : "Supporto tecnico su richiesta"
+  M3 --> TH2 : "Richiesta analisi estesa"
+  TH2 --> M3 : "Esito analisi"
+  G5 --> STKH : "Report strategici"
+  STKH --> G1 : "Richieste / indirizzi"
+}

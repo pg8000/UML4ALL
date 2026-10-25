@@ -2,7 +2,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const files = new Set(['index.html', 'style.css', 'engine.js', 'safe-svg.js', 'render-worker.js', 'examples.js', 'app.js', 'blocks.js']);
+const files = new Set(['index.html', 'style.css', 'engine.js', 'safe-svg.js', 'render-worker.js', 'examples.js', 'app.js', 'blocks.js', 'layout-elk.js', 'vendor/elk-0.12.0.js']);
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
 http.createServer((req, res) => {
   let file;

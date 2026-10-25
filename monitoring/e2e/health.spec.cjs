@@ -188,3 +188,39 @@ test('splitter resizes editor and refits diagram by keyboard and pointer', async
   expect(await page.locator('body').evaluate(el => el.classList.contains('resizing'))).toBe(false);
   await attachScreen(page, testInfo, 'resized-panels');
 });
+
+
+test('complex SOC can be summarized, expanded and focused without losing source', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await page.locator('#example').selectOption('soc');
+  await ready(page, 'Cyber Security Operations Center');
+  await expect(page.locator('#diagram-info')).toHaveText('12 elementi · 20 collegamenti');
+  await expect(page.locator('#view-notice')).toContainText('Collegamenti interni nascosti');
+  const original = await page.locator('#source').inputValue();
+  await expect(page).toHaveScreenshot('soc-overview.png', { fullPage: true });
+  await attachScreen(page, testInfo, 'soc-overview');
+  await page.locator('#diagram-scope').selectOption('full');
+  await ready(page, 'Cyber Security Operations Center');
+  await expect(page.locator('#diagram-info')).toHaveText('44 elementi · 48 collegamenti');
+  await attachScreen(page, testInfo, 'soc-full');
+  const option = await page.locator('#diagram-scope option').evaluateAll(opts => opts.find(o => o.textContent === 'Gruppo: Threat Hunting').value);
+  await page.locator('#diagram-scope').selectOption(option);
+  await ready(page, 'Cyber Security Operations Center / Threat Hunting');
+  await expect(page.locator('#diagram-info')).toHaveText('5 elementi · 4 collegamenti');
+  await expect(page.locator('#source')).toHaveValue(original);
+  await expect(page).toHaveScreenshot('soc-focused.png', { fullPage: true });
+  await attachScreen(page, testInfo, 'soc-focused');
+  const save = page.waitForEvent('download');
+  await page.locator('#save-button').click();
+  expect(await fs.readFile(await (await save).path(), 'utf8')).toBe(original);
+});
+
+test('guide documents every language command and its complete example is valid', async ({ page }) => {
+  await page.goto('/');
+  await ready(page, 'Architettura di rete');
+  await page.locator('#help-button').click();
+  const guide = page.locator('#help');
+  for (const text of ['layout layered','layout simple','spacing compact','spacing normal','spacing wide','Panoramica per gruppi','Dettaglio completo','3 secondi','4.096','100.000','Ctrl/Cmd+Invio']) await expect(guide).toContainText(text);
+  const codes = await guide.locator('pre').allTextContents();
+  for (const code of codes) expect(engine.parse(code).nodes.length).toBeGreaterThan(0);
+});

@@ -8,12 +8,12 @@
   <meta name="theme-color" content="#172c29">
   <meta name="description" content="UML4ALL: diagrammi di rete, architetture e flussi di lavoro dal testo, direttamente nel browser.">
   <title>UML4ALL — dal testo al diagramma</title>
-  <link rel="stylesheet" href="style.css?v=0.3.0">
-  <script src="engine.js?v=0.2.0" defer></script>
+  <link rel="stylesheet" href="style.css?v=0.4.0">
+  <script src="engine.js?v=0.4.0" defer></script>
   <script src="safe-svg.js?v=0.2.0" defer></script>
   <script src="examples.js" defer></script>
   <script src="blocks.js?v=0.3.0" defer></script>
-  <script src="app.js?v=0.3.0" defer></script>
+  <script src="app.js?v=0.4.0" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -24,7 +24,8 @@
   <main>
     <section class="intro"><div><p class="eyebrow">IL TUO PROSSIMO SCHEMA INIZIA QUI</p><h1>Scrivi le idee.<br class="mobile-break"> Guarda le connessioni.</h1><p>Reti, architetture e processi. Un linguaggio semplice, un diagramma che prende forma.</p></div><div class="local-badge"><span></span> Elaborazione nel tuo browser</div></section>
     <section class="workspace" aria-label="Editor di diagrammi">
-      <div class="workspace-toolbar"><div class="examples"><label for="example">Parti da un esempio</label><select id="example"><option value="network">01 · Architettura di rete</option><option value="workflow">02 · Flusso di approvazione</option><option value="logic">03 · Architettura logica</option><option value="blank">04 · Schema essenziale</option></select></div><div class="file-actions"><button id="diagram-view" class="quiet" aria-pressed="false" aria-controls="diagram-panels">Solo diagramma</button><button id="save-button" class="quiet">↓ Salva codice</button><button id="export-button" class="primary">Esporta SVG <span aria-hidden="true">↗</span></button></div></div>
+      <div class="workspace-toolbar"><div class="examples"><label for="example">Parti da un esempio</label><select id="example"><option value="network">01 · Architettura di rete</option><option value="workflow">02 · Flusso di approvazione</option><option value="logic">03 · Architettura logica</option><option value="blank">04 · Schema essenziale</option><option value="soc">05 · SOC complesso</option></select></div><div class="view-choice"><label for="diagram-scope">Vista</label><select id="diagram-scope"><option value="auto">Automatica</option><option value="full">Dettaglio completo</option><option value="overview">Panoramica per gruppi</option></select></div><div class="file-actions"><button id="diagram-view" class="quiet" aria-pressed="false" aria-controls="diagram-panels">Solo diagramma</button><button id="save-button" class="quiet">↓ Salva codice</button><button id="export-button" class="primary">Esporta SVG <span aria-hidden="true">↗</span></button></div></div>
+      <div id="view-notice" role="status" aria-live="polite"></div>
       <div class="panels" id="diagram-panels">
         <section class="code-panel" aria-label="Codice sorgente"><div class="panel-heading"><span><span class="panel-dot"></span> SORGENTE <span class="file-extension">.ret</span></span><label class="live-toggle"><input id="live" type="checkbox" checked> Anteprima live</label></div><div class="editor-wrap"><pre id="line-numbers" aria-hidden="true">1</pre><textarea id="source" spellcheck="false" aria-label="Codice del diagramma" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea></div><div class="code-footer"><span id="cursor">Riga 1, colonna 1</span><button id="render-button" title="Ctrl+Invio o Cmd+Invio">Genera <kbd>Ctrl ↵</kbd></button></div><details class="block-library" open><summary>Blocchi pronti <span>Clicca per aggiungere</span></summary><div id="block-list" class="block-grid" aria-label="Blocchi pronti"></div></details></section>
         <div id="panel-resizer" class="panel-resizer" role="separator" tabindex="0" aria-label="Larghezza del codice" aria-orientation="vertical" aria-controls="source" aria-valuemin="20" aria-valuemax="70" aria-valuenow="34" title="Trascina per ridimensionare. Usa anche le frecce sinistra e destra."></div>
@@ -72,9 +73,38 @@
     <h3>5. Consulta la sintassi</h3>
     <p><strong>Elementi disponibili:</strong> <code>cloud</code>, <code>router</code>, <code>firewall</code>, <code>switch</code>, <code>network</code>, <code>server</code>, <code>database</code>, <code>service</code>, <code>actor</code>, <code>task</code>, <code>decision</code>, <code>start</code>, <code>end</code>, <code>node</code>.</p>
     <ul><li><code>zone "Nome" {</code> e <code>group "Nome" {</code> creano gruppi annidati. Collega gli elementi contenuti usando i loro identificatori.</li><li><code>a -> b -> c</code> collega una sequenza. <code>a &lt;-> b</code> è bidirezionale; <code>a -- b</code> non ha frecce; <code>a --> b</code> è tratteggiato.</li><li><code>a -> b : Etichetta</code> aggiunge una descrizione al collegamento. Usa le virgolette per etichette con caratteri speciali.</li><li><code>direction right</code> oppure <code>direction down</code> sceglie l’orientamento per tutto il diagramma.</li><li>Proprietà dentro un elemento: <code>ip</code>, <code>subnet</code>, <code>vlan</code>, <code>protocol</code>, <code>owner</code>, <code>note</code>, <code>color</code>. Scrivi <code>nome = "valore"</code> su una riga; per esempio <code>vlan = "10"</code> o <code>color = "#dbeafe"</code>. Le proprietà di rete sono descrittive.</li><li>Identificatori: lettere ASCII, numeri, trattino e underscore; primo carattere una lettera o underscore. Etichette fra virgolette; <code>\n</code> per andare a capo.</li><li>Commenti su una riga con <code>//</code> oppure <code>#</code>. Puoi scrivere i collegamenti prima delle dichiarazioni, purché tutti gli elementi siano dichiarati nel diagramma.</li></ul>
-    <h3>6. Correggi gli errori</h3>
+    <h3>6. Layout, spaziatura e schemi complessi</h3>
+    <p>Il layout predefinito è <code>layout layered</code>: usa ELK nel Web Worker, senza servizi esterni. Riserva spazio alle etichette e dispone i collegamenti ad angolo retto. Puoi scegliere <code>layout simple</code> per il precedente motore a curve. <code>spacing compact</code> è la spaziatura predefinita; usa <code>spacing normal</code> o <code>spacing wide</code> per aumentare le distanze. Questi due comandi si scrivono solo nel diagramma principale.</p>
+    <p><code>direction right</code> e <code>direction down</code> indicano l’orientamento. Possono essere scritti anche in <code>group</code> e <code>zone</code>. Nel layout ELK con collegamenti tra gruppi prevale l’orientamento globale per mantenere coerenti i percorsi gerarchici; con <code>layout simple</code> le direzioni locali sono indipendenti. Per leggere un singolo gruppo in ELK selezionalo dal menu Vista: il suo orientamento diventa quello della vista.</p>
+    <pre>diagram "Esempio completo" {
+  direction right
+  layout layered
+  spacing compact
+  group "Applicazioni" {
+    direction down
+    server api "API" {
+      ip = "10.0.1.10"
+      subnet = "10.0.1.0/24"
+      vlan = "20"
+      protocol = "HTTPS"
+      owner = "Team IT"
+      note = "Prima riga\nSeconda riga"
+      color = "#dbeafe"
+    }
+    database db "Archivio"
+    api -&gt; db : "Scrittura / lettura"
+  }
+}</pre>
+    <p><strong>Vista Automatica:</strong> oltre 25 elementi mostra una panoramica per gruppi. <strong>Panoramica per gruppi:</strong> riassume i gruppi, nasconde i collegamenti interni e accorpa quelli esterni equivalenti. Se le etichette accorpate sono troppo lunghe mostra il numero dei collegamenti. <strong>Dettaglio completo:</strong> mostra ogni elemento e ogni collegamento. <strong>Gruppo:</strong> mostra solo le sue attività e i collegamenti interni. Queste viste preservano tutto il codice: non cancellano elementi.</p>
+    <p>Esporta SVG scarica la <strong>vista visualizzata</strong>. Salva codice conserva sempre il <strong>diagramma completo</strong>. Nessun layout può rendere leggibili decine di etichette in pochi pixel: usa una vista per gruppo o aumenta lo zoom. Gli incroci necessari possono rimanere, soprattutto in presenza di cicli.</p>
+    <h3>7. Comandi, scorciatoie e limiti</h3>
+    <p>Il contenitore iniziale è <code>diagram "Titolo" {</code>. Chiudi ogni blocco con <code>}</code> su una riga dedicata. <code>zone</code> e <code>group</code> sono equivalenti; non hanno identificatori collegabili e non accettano proprietà. Le proprietà elencate sopra si applicano agli elementi: il colore riguarda il riempimento, non i bordi o il testo. Direzioni disponibili: solo <code>right</code> e <code>down</code>. Sintassi Mermaid, HTML, classi, file esterni e script non sono supportati.</p>
+    <p><code>-&gt;</code> è una freccia continua, <code>&lt;-&gt;</code> bidirezionale, <code>--</code> una linea senza frecce e <code>--&gt;</code> una freccia tratteggiata. Una catena può avere un’etichetta, applicata a ogni tratto. Per collegare più destinazioni scrivi una riga per destinazione. Sono ammessi cicli e auto-collegamenti. Un elemento senza etichetta usa l’identificatore come testo. Nelle stringhe usa <code>\n</code>, <code>\&quot;</code> e <code>\\</code> per a capo, virgolette e barra inversa.</p>
+    <p><strong>Ctrl/Cmd+Invio:</strong> genera. <strong>Ctrl/Cmd+S nell’editor:</strong> scarica il codice. <strong>Tab nell’editor:</strong> inserisce due spazi. <strong>Esc:</strong> chiude la guida. Il divisore si usa con il mouse oppure, dopo averlo selezionato con Tab, con frecce sinistra/destra; Shift aumenta il passo, Home/End raggiungono i limiti. I pannelli sono impilati su mobile. Zoom: da 8% a 300%; il pulsante Adatta ripristina l’adattamento automatico alla larghezza.</p>
+    <p>Limiti: 100.000 caratteri, 5.000 righe, 4.096 caratteri per riga, 250 elementi, 500 collegamenti, 100 gruppi, 12 livelli di gruppi annidati. Identificatori fino a 64 caratteri, titoli ed etichette fino a 300, valori delle proprietà fino a 500. I colori devono essere esadecimali a sei cifre. Ogni proprietà può comparire una sola volta per elemento. Il Worker viene interrotto dopo 3 secondi e l’SVG non può superare 2 MB. In apertura diretta come file il motore di compatibilità usa il layout semplice: per ELK e le viste usa il sito web.</p>
+    <h3>8. Correggi gli errori</h3>
     <ul><li><strong>Elemento non dichiarato:</strong> controlla che l’identificatore usato nel collegamento corrisponda a un elemento dichiarato.</li><li><strong>Identificatore duplicato:</strong> assegna un identificatore diverso a ciascun elemento, anche se si trova in un altro gruppo.</li><li><strong>Parentesi o virgolette mancanti:</strong> chiudi ogni blocco con <code>}</code> e ogni etichetta con le virgolette.</li><li>Il messaggio sotto l’editor indica la riga da controllare. Se esiste una versione valida precedente, l’anteprima continua a mostrarla finché il codice non viene corretto.</li></ul>
-    <p class="help-note">Prototipo 0.1: layout automatico di base. Nei grafi molto densi alcuni collegamenti possono incrociarsi. Fino a 250 elementi, 500 collegamenti e 100 gruppi. Titoli ed etichette: massimo 300 caratteri; proprietà: 500 caratteri. Chiudi la guida con <strong>✕</strong> o con il tasto <strong>Esc</strong>.</p>
+    <p class="help-note">Layout ELK con percorsi ortogonali ed etichette con spazio dedicato. Nei grafi densi gli incroci fra collegamenti restano possibili: usa la panoramica e le viste per gruppo. Fino a 250 elementi, 500 collegamenti e 100 gruppi. Titoli ed etichette: massimo 300 caratteri; proprietà: 500 caratteri. Chiudi la guida con <strong>✕</strong> o con il tasto <strong>Esc</strong>.</p>
   </dialog>
 </body>
 </html>

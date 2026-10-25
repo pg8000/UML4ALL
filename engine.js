@@ -31,7 +31,7 @@
   function parse(source) {
     if (typeof source !== 'string') fail(1, 'Il codice deve essere testo.');
     if (source.length > LIMITS.source) fail(1, 'Il codice supera il limite di 100.000 caratteri.');
-    const model = { title: '', direction: 'right', nodes: [], edges: [], children: [], line: 1 };
+    const model = { title: '', direction: 'right', layout: 'layered', spacing: 'compact', nodes: [], edges: [], children: [], line: 1 };
     const ids = new Map(), stack = []; let opened = false, closed = false, groups = 0;
     const lines = source.replace(/\r\n?/g, '\n').split('\n');
     if (lines.length > LIMITS.lines) fail(1, 'Limite: 5.000 righe.');
@@ -57,8 +57,13 @@
         parent.props[t[0]] = checkedText(t[2], n, LIMITS.property); return;
       }
       if (is(0, 'direction')) {
-        if (parent !== model || t.length !== 2 || !(is(1, 'right') || is(1, 'down'))) fail(n, 'Usa direction right oppure direction down nel diagramma.');
-        model.direction = t[1]; return;
+        if (t.length !== 2 || !(is(1, 'right') || is(1, 'down'))) fail(n, 'Usa direction right oppure direction down nel diagramma o in un gruppo.');
+        parent.direction = t[1]; return;
+      }
+      if (is(0, 'layout') || is(0, 'spacing')) {
+        const allowed = is(0, 'layout') ? ['layered', 'simple'] : ['compact', 'normal', 'wide'];
+        if (parent !== model || t.length !== 2 || ts[1].quoted || !allowed.includes(t[1])) fail(n, 'Usa ' + t[0] + ' ' + allowed.join(' oppure ') + ' nel diagramma.');
+        model[t[0]] = t[1]; return;
       }
       if (is(0, 'zone') || is(0, 'group')) {
         if (!(t.length === 3 && ts[1].quoted && is(2, '{'))) fail(n, 'Gruppo atteso: zone "Nome" {');
@@ -110,8 +115,8 @@
     });
   }
   function layout(model) {
-    const horizontal = model.direction === 'right';
     function arrange(container) {
+      const horizontal = (container.direction || model.direction) === 'right';
       const children = container.children;
       for (const c of children) {
         if (c.type === 'group') arrange(c);
@@ -155,8 +160,9 @@
     function absolute(c, ox, oy) { c.ax = ox + (c.x || 0); c.ay = oy + (c.y || 0); if (c.children) c.children.forEach(n => absolute(n, c.ax, c.ay)); }
     absolute(model, 0, 0); return model;
   }
-  function render(source) {
-    const model = layout(parse(source)), parts = []; let outputSize = 0;
+  function render(source) { return renderModel(layout(parse(source))); }
+  function renderModel(model) {
+    const parts = []; let outputSize = 0;
     const add = s => { outputSize += s.length; if (outputSize > LIMITS.svg) fail(1, 'Il diagramma generato supera il limite di 2 MB.'); parts.push(s); };
     add(`<svg xmlns="http://www.w3.org/2000/svg" width="${model.w}" height="${model.h}" viewBox="0 0 ${model.w} ${model.h}" role="img" aria-labelledby="diagram-title"><title id="diagram-title">${esc(model.title)}</title><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#6b8879" stroke-width="1.6"/></marker></defs><rect width="100%" height="100%" fill="#fcfdfb" rx="10"/>`);
     add(`<text x="35" y="29" font-family="Segoe UI,Arial,sans-serif" font-size="15" font-weight="600" fill="#284a3c">${esc(model.title)}</text>`);
@@ -166,7 +172,9 @@
     for (const e of model.edges) {
       const a = model.byId.get(e.from), b = model.byId.get(e.to), horizontal = model.direction === 'right';
       let x1 = a.ax + a.w / 2, y1 = a.ay + a.h / 2, x2 = b.ax + b.w / 2, y2 = b.ay + b.h / 2, path, lx, ly;
-      if (a === b) {
+      if (e.route) {
+        path = e.route; lx = e.labelX; ly = e.labelY;
+      } else if (a === b) {
         x1 = a.ax + a.w; y1 = a.ay + a.h * .35; x2 = x1; y2 = a.ay + a.h * .7;
         path = `M${x1} ${y1} C${x1 + 40} ${y1 - 35} ${x2 + 40} ${y2 + 35} ${x2} ${y2}`; lx = x1 + 23; ly = a.ay + a.h / 2;
       } else if (horizontal && Math.abs(x2 - x1) > 10) {
@@ -195,7 +203,7 @@
     labels.forEach(add); add('</svg>');
     return { svg: parts.join(''), model };
   }
-  const api = Object.freeze({ parse, layout, render, LIMITS });
+  const api = Object.freeze({ parse, layout, render, renderModel, wrap, LIMITS });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.UML4ALL = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

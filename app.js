@@ -72,6 +72,11 @@
         previewURL = url;
         result = { svg: safe, model: output.model };
         renderedSource = snapshot;
+      $('view-notice').textContent = output.notice || '';
+      const selectedScope = $('diagram-scope').value;
+      for (const option of Array.from($('diagram-scope').options)) if (option.value.startsWith('group:')) option.remove();
+      for (const choice of output.choices || []) { const option = document.createElement('option'); option.value = choice.value; option.textContent = 'Gruppo: ' + choice.label; $('diagram-scope').append(option); }
+      if (Array.from($('diagram-scope').options).some(o => o.value === selectedScope)) $('diagram-scope').value = selectedScope;
       $('diagram-info').textContent = `${result.model.nodeCount} elementi · ${result.model.edgeCount} collegamenti`;
       status.textContent = 'Aggiornato';
       $('export-button').disabled = false;
@@ -88,14 +93,14 @@
       return;
     }
     try {
-      worker = new Worker('render-worker.js?v=0.2.0');
+      worker = new Worker('render-worker.js?v=0.4.0');
       worker.onmessage = event => {
         if (event.data.ok) completed(event.data);
         else failed(event.data.error || new Error('Generazione non riuscita.'));
       };
       worker.onerror = () => failed(new Error('Motore di disegno non disponibile. Ricarica la pagina e riprova.'));
       workerTimer = setTimeout(() => failed(new Error('Elaborazione interrotta dopo 3 secondi. Riduci la complessità del diagramma.')), 3000);
-      worker.postMessage(snapshot);
+      worker.postMessage({ source: snapshot, view: $('diagram-scope').value });
     } catch (error) { failed(new Error('Impossibile avviare il motore di disegno. Usa un browser aggiornato.')); }
   }
   function changed() {
@@ -125,7 +130,8 @@
   });
   $('render-button').addEventListener('click', generate);
   $('live').addEventListener('change', () => { clearTimeout(timer); if ($('live').checked) generate(); });
-  $('example').addEventListener('change', e => load(UML4ALLExamples[e.target.value]));
+  $('example').addEventListener('change', e => { $('diagram-scope').value = 'auto'; load(UML4ALLExamples[e.target.value]); });
+  $('diagram-scope').addEventListener('change', () => { fitToWidth = true; generate(); });
   $('save-button').addEventListener('click', () => download(source.value, 'text/plain;charset=utf-8', '.ret'));
   $('export-button').addEventListener('click', () => { if (result && renderedSource === source.value) download(result.svg, 'image/svg+xml;charset=utf-8', '.svg'); });
   $('zoom-in').addEventListener('click', () => { fitToWidth = false; zoom = Math.min(3, zoom * 1.2); scale(); });
