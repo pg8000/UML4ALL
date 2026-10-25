@@ -54,3 +54,20 @@ test('layout commands are bounded enums; local directions and simple compatibili
 test('layout retains escaped text, safe source bounds and prototype-like node IDs', async()=>{
   const r=await render('diagram "<script>" {\nnode constructor "<script>alert(1)</script>"\nnode __proto__\nconstructor -> __proto__ : "<image href=evil>"\n}');assert.ok(!r.svg.includes('<script>'));assert.ok(!r.svg.includes('<image'));await assert.rejects(render(' '.repeat(100001)));
 });
+
+test('real worker entry point initializes the bundled ELK without nested workers or DOM globals', { timeout: 3000 }, async () => {
+  const vm = require('node:vm'), path = require('node:path');
+  let respond, reject;
+  const result = new Promise((resolve, fail) => { respond=resolve; reject=fail; });
+  const context = vm.createContext({ console, setTimeout, clearTimeout, postMessage: respond });
+  context.self = context;
+  context.importScripts = (...urls) => {
+    for (const url of urls) vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', url.split('?')[0]), 'utf8'), context, { filename: url });
+  };
+  vm.runInContext(fs.readFileSync(require.resolve('../render-worker.js'), 'utf8'), context);
+  Promise.resolve(context.onmessage({ data: { source: examples.network, view: 'auto' } })).catch(reject);
+  const output=await result;
+  assert.equal(output.ok,true,output.error?.message);
+  assert.equal(output.model.nodeCount,6);
+  assert.ok(output.svg.startsWith('<svg'));
+});

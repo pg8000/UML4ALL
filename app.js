@@ -93,7 +93,7 @@
       return;
     }
     try {
-      worker = new Worker('render-worker.js?v=0.4.0');
+      worker = new Worker('render-worker.js?v=0.4.1');
       worker.onmessage = event => {
         if (event.data.ok) completed(event.data);
         else failed(event.data.error || new Error('Generazione non riuscita.'));
