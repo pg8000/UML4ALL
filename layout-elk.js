@@ -70,6 +70,7 @@
           'elk.direction': direction === 'down' ? 'DOWN' : 'RIGHT',
           'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
           'elk.edgeRouting': 'ORTHOGONAL',
+          'elk.layered.compaction.postCompaction.strategy': 'LEFT',
           'elk.spacing.nodeNode': String(gap),
           'elk.layered.spacing.nodeNodeBetweenLayers': String(gap + 32),
           'elk.spacing.edgeNode': '18',

@@ -1,6 +1,6 @@
 /* Layout and SVG construction stay inside a disposable worker with a 3s deadline. */
 'use strict';
-importScripts('engine.js?v=0.4.2', 'vendor/elk-0.12.0.js?v=uml4all-1', 'layout-elk.js?v=0.4.2');
+importScripts('engine.js?v=0.4.2', 'vendor/elk-0.12.0.js?v=uml4all-1', 'layout-elk.js?v=0.4.3');
 self.onmessage = async event => {
   try {
     const request = typeof event.data === 'string' ? { source: event.data, view: 'auto' } : event.data;
