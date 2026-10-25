@@ -111,3 +111,30 @@ test('published GitHub Pages is operational', async ({ browser }, testInfo) => {
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
+
+test('diagram grows with page and manual zoom survives layout changes', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#source').fill('diagram "Diagramma verticale" {\n direction down\n' +
+    Array.from({ length: 12 }, (_, i) => `node n${i} "Passo ${i + 1}"`).join('\n') + '\n' +
+    Array.from({ length: 11 }, (_, i) => `n${i} -> n${i + 1}`).join('\n') + '\n}');
+  await ready(page, 'Diagramma verticale');
+  const canvas = page.locator('#preview');
+  const height = await canvas.evaluate(el => el.clientHeight);
+  await page.locator('#zoom-in').click();
+  const zoom = await page.locator('#zoom-value').textContent();
+  await expect.poll(() => canvas.evaluate(el => el.clientHeight)).toBeGreaterThan(height);
+  // The page grows vertically; only horizontal overflow remains inside the canvas.
+  expect(await canvas.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+  await page.locator('#diagram-view').click();
+  await expect(page.locator('.code-panel')).toBeHidden();
+  await expect(page.locator('#diagram-view')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#zoom-value')).toHaveText(zoom);
+  await page.setViewportSize({ width: 600, height: 800 });
+  await expect(page.locator('#zoom-value')).toHaveText(zoom);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  await page.locator('#fit').click();
+  expect(await canvas.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+  await page.locator('#diagram-view').click();
+  await expect(page.locator('.code-panel')).toBeVisible();
+  await expect(page.locator('#source')).toHaveValue(/Diagramma verticale/);
+});

@@ -6,6 +6,7 @@
   const STORAGE_KEY = 'uml4all.source.v1';
   const MAX_SOURCE = UML4ALL.LIMITS.source;
   source.maxLength = MAX_SOURCE;
+  let fitToWidth = true;
   let timer, result, zoom = 1, renderedSource = null, storageFailed = false;
   let worker = null, workerTimer, generation = 0, previewURL = null;
   function cancelRender() {
@@ -35,7 +36,8 @@
   }
   function fit() {
     if (!result) return;
-    zoom = Math.min(1, Math.max(.08, Math.min((preview.clientWidth - 50) / result.model.w, (preview.clientHeight - 50) / result.model.h)));
+    fitToWidth = true;
+    zoom = Math.min(1, Math.max(.08, (preview.clientWidth - 50) / result.model.w));
     scale(); preview.scrollTo(0, 0);
   }
   function generate() {
@@ -74,7 +76,8 @@
       status.textContent = 'Aggiornato';
       $('export-button').disabled = false;
       showMessage(storageFailed ? 'Salvataggio automatico non disponibile. Usa “Salva codice” per conservare il lavoro.' : '');
-      fit();
+      if (fitToWidth) fit();
+      else scale();
       } catch (error) { failed(error); }
     }
     if (snapshot.length > MAX_SOURCE) { failed(new Error('Il codice supera il limite di 100.000 caratteri.')); return; }
@@ -125,15 +128,27 @@
   $('example').addEventListener('change', e => load(UML4ALLExamples[e.target.value]));
   $('save-button').addEventListener('click', () => download(source.value, 'text/plain;charset=utf-8', '.ret'));
   $('export-button').addEventListener('click', () => { if (result && renderedSource === source.value) download(result.svg, 'image/svg+xml;charset=utf-8', '.svg'); });
-  $('zoom-in').addEventListener('click', () => { zoom = Math.min(3, zoom * 1.2); scale(); });
-  $('zoom-out').addEventListener('click', () => { zoom = Math.max(.08, zoom / 1.2); scale(); });
+  $('zoom-in').addEventListener('click', () => { fitToWidth = false; zoom = Math.min(3, zoom * 1.2); scale(); });
+  $('zoom-out').addEventListener('click', () => { fitToWidth = false; zoom = Math.max(.08, zoom / 1.2); scale(); });
   $('fit').addEventListener('click', fit);
   $('help-button').addEventListener('click', () => $('help').showModal());
   $('close-help').addEventListener('click', () => $('help').close());
   $('help').addEventListener('click', e => { if (e.target === $('help')) { const r = $('help').getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) $('help').close(); } });
   let saved; try { saved = localStorage.getItem(STORAGE_KEY); } catch { /* Local files can restrict storage. */ }
   load(saved !== null && saved !== undefined ? saved : UML4ALLExamples.network);
-  new ResizeObserver(() => fit()).observe(preview);
+  $('diagram-view').addEventListener('click', () => {
+    const expanded = document.querySelector('.workspace').classList.toggle('diagram-only');
+    $('diagram-view').setAttribute('aria-pressed', String(expanded));
+    $('diagram-view').textContent = expanded ? 'Mostra codice' : 'Solo diagramma';
+  });
+  // Height now follows the image. Observe width only, and preserve manual zoom.
+  let previewWidth = 0;
+  new ResizeObserver(() => {
+    const width = preview.clientWidth;
+    if (width === previewWidth) return;
+    previewWidth = width;
+    if (fitToWidth) fit();
+  }).observe(preview);
   window.addEventListener('pagehide', () => { cancelRender(); if (previewURL) URL.revokeObjectURL(previewURL); });
   window.addEventListener('pageshow', event => { if (event.persisted) generate(); });
 })();
