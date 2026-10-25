@@ -41,6 +41,7 @@ jobs:
       - name: Install Chromium
         working-directory: monitoring
         run: npx playwright install --with-deps chromium
+      # New reference series for the reviewed, page-flow preview layout.
       - name: Find previous visual reference
         id: baseline
         env:
@@ -51,14 +52,14 @@ jobs:
           if [ "$REFRESH" = "true" ]; then
             echo 'run_id=' >> "$GITHUB_OUTPUT"
           else
-            run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=uml4all-visual-baseline&per_page=100" --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")][0].workflow_run.id // empty')
+            run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=uml4all-visual-baseline-layout-v2&per_page=100" --jq '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")][0].workflow_run.id // empty')
             echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
           fi
       - name: Restore visual reference
         if: steps.baseline.outputs.run_id != ''
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: uml4all-visual-baseline
+          name: uml4all-visual-baseline-layout-v2
           path: monitoring/snapshots
           github-token: ${{ github.token }}
           run-id: ${{ steps.baseline.outputs.run_id }}
@@ -78,7 +79,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: uml4all-visual-baseline
+          name: uml4all-visual-baseline-layout-v2
           path: monitoring/snapshots
           retention-days: 30
           if-no-files-found: error

@@ -116,7 +116,7 @@ test('published GitHub Pages is operational', async ({ browser }, testInfo) => {
   } finally { await context.close(); }
 });
 
-test('diagram grows with page and manual zoom survives layout changes', async ({ page }) => {
+test('diagram grows with page and manual zoom survives layout changes', async ({ page }, testInfo) => {
   await page.goto('/');
   await page.locator('#source').fill('diagram "Diagramma verticale" {\n direction down\n' +
     Array.from({ length: 12 }, (_, i) => `node n${i} "Passo ${i + 1}"`).join('\n') + '\n' +
@@ -138,6 +138,7 @@ test('diagram grows with page and manual zoom survives layout changes', async ({
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.locator('#fit').click();
   expect(await canvas.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
+  await attachScreen(page, testInfo, 'expanded-diagram');
   await page.locator('#diagram-view').click();
   await expect(page.locator('.code-panel')).toBeVisible();
   await expect(page.locator('#source')).toHaveValue(/Diagramma verticale/);
