@@ -8,11 +8,12 @@
   <meta name="theme-color" content="#172c29">
   <meta name="description" content="UML4ALL: diagrammi di rete, architetture e flussi di lavoro dal testo, direttamente nel browser.">
   <title>UML4ALL — dal testo al diagramma</title>
-  <link rel="stylesheet" href="style.css?v=0.2.2">
+  <link rel="stylesheet" href="style.css?v=0.3.0">
   <script src="engine.js?v=0.2.0" defer></script>
   <script src="safe-svg.js?v=0.2.0" defer></script>
   <script src="examples.js" defer></script>
-  <script src="app.js?v=0.2.1" defer></script>
+  <script src="blocks.js?v=0.3.0" defer></script>
+  <script src="app.js?v=0.3.0" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -25,7 +26,8 @@
     <section class="workspace" aria-label="Editor di diagrammi">
       <div class="workspace-toolbar"><div class="examples"><label for="example">Parti da un esempio</label><select id="example"><option value="network">01 · Architettura di rete</option><option value="workflow">02 · Flusso di approvazione</option><option value="logic">03 · Architettura logica</option><option value="blank">04 · Schema essenziale</option></select></div><div class="file-actions"><button id="diagram-view" class="quiet" aria-pressed="false" aria-controls="diagram-panels">Solo diagramma</button><button id="save-button" class="quiet">↓ Salva codice</button><button id="export-button" class="primary">Esporta SVG <span aria-hidden="true">↗</span></button></div></div>
       <div class="panels" id="diagram-panels">
-        <section class="code-panel" aria-label="Codice sorgente"><div class="panel-heading"><span><span class="panel-dot"></span> SORGENTE <span class="file-extension">.ret</span></span><label class="live-toggle"><input id="live" type="checkbox" checked> Anteprima live</label></div><div class="editor-wrap"><pre id="line-numbers" aria-hidden="true">1</pre><textarea id="source" spellcheck="false" aria-label="Codice del diagramma" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea></div><div class="code-footer"><span id="cursor">Riga 1, colonna 1</span><button id="render-button" title="Ctrl+Invio o Cmd+Invio">Genera <kbd>Ctrl ↵</kbd></button></div></section>
+        <section class="code-panel" aria-label="Codice sorgente"><div class="panel-heading"><span><span class="panel-dot"></span> SORGENTE <span class="file-extension">.ret</span></span><label class="live-toggle"><input id="live" type="checkbox" checked> Anteprima live</label></div><div class="editor-wrap"><pre id="line-numbers" aria-hidden="true">1</pre><textarea id="source" spellcheck="false" aria-label="Codice del diagramma" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea></div><div class="code-footer"><span id="cursor">Riga 1, colonna 1</span><button id="render-button" title="Ctrl+Invio o Cmd+Invio">Genera <kbd>Ctrl ↵</kbd></button></div><details class="block-library" open><summary>Blocchi pronti <span>Clicca per aggiungere</span></summary><div id="block-list" class="block-grid" aria-label="Blocchi pronti"></div></details></section>
+        <div id="panel-resizer" class="panel-resizer" role="separator" tabindex="0" aria-label="Larghezza del codice" aria-orientation="vertical" aria-controls="source" aria-valuemin="20" aria-valuemax="70" aria-valuenow="34" title="Trascina per ridimensionare. Usa anche le frecce sinistra e destra."></div>
         <section class="preview-panel" aria-label="Anteprima diagramma"><div class="panel-heading"><span>DIAGRAMMA <span id="render-status" class="render-status">Pronto</span></span><div class="zoom-controls"><button id="zoom-out" aria-label="Riduci zoom">−</button><span id="zoom-value">100%</span><button id="zoom-in" aria-label="Aumenta zoom">+</button><button id="fit" title="Adatta alla finestra" aria-label="Adatta alla finestra">⤢</button></div></div><div id="preview" class="canvas" tabindex="0" aria-label="Diagramma generato, area scorrevole"></div><div class="preview-footer"><span id="diagram-info"></span><span>SVG · vettoriale</span></div></section>
       </div>
       <div id="message" role="status" aria-live="polite"></div>
@@ -37,6 +39,7 @@
     <p>Scrivi gli elementi e le loro connessioni nel pannello a sinistra: il diagramma prende forma nel pannello a destra. Tutta l’elaborazione avviene nel tuo browser.</p>
     <h3>1. Crea il primo diagramma</h3>
     <ol><li>Scegli un esempio dal menu <strong>Parti da un esempio</strong>: rete, flusso di approvazione, architettura logica o schema essenziale.</li><li>Modifica o incolla il codice nel pannello <strong>Sorgente</strong>. Con <strong>Anteprima live</strong> attiva, il diagramma si aggiorna mentre scrivi.</li><li>Per aggiornare il disegno manualmente, disattiva l’anteprima live e premi <strong>Genera</strong> oppure <strong>Ctrl+Invio</strong> (<strong>Cmd+Invio</strong> su Mac).</li><li>Usa <strong>+</strong> e <strong>−</strong> per lo zoom e <strong>⤢</strong> per adattare il diagramma alla larghezza disponibile. L’anteprima cresce in altezza con il disegno: scorri la pagina per esplorarlo. Premi <strong>Solo diagramma</strong> per usare tutta la larghezza, poi <strong>Mostra codice</strong> per tornare all’editor.</li></ol>
+    <p>Trascina il divisore tra codice e diagramma per cambiare la larghezza dei pannelli. Puoi selezionarlo con Tab e usare le frecce sinistra e destra. Con <strong>Blocchi pronti</strong> inserisci un elemento e il relativo codice con un clic: l’etichetta viene selezionata per modificarla. Gli identificatori sono unici. Se il codice contiene errori, correggili prima di inserire altri blocchi.</p>
     <h3>2. Salva ed esporta</h3>
     <ul><li><strong>Salva codice</strong> scarica un file <code>.ret</code> modificabile. Puoi usare anche <strong>Ctrl+S</strong> o <strong>Cmd+S</strong> quando il cursore è nell’editor.</li><li>Per riprendere un progetto salvato, apri il file <code>.ret</code> con un editor di testo e copia il contenuto nel pannello <strong>Sorgente</strong>.</li><li><strong>Esporta SVG</strong> scarica il diagramma come immagine vettoriale, utilizzabile in documenti e presentazioni. Il pulsante si attiva quando il codice è valido e l’anteprima è aggiornata.</li><li>Il salvataggio automatico conserva l’ultimo codice in questo browser, quando consentito. Per conservare più progetti, scarica un file <code>.ret</code> per ciascuno. Scegliere un esempio o incollare altro testo sostituisce il codice corrente: salvalo prima, se vuoi conservarlo.</li></ul>
     <h3>3. Scrivi uno schema di rete</h3>

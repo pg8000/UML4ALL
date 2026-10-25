@@ -25,7 +25,7 @@ test('examples, layout and visual regression', async ({ page }, testInfo) => {
     await attachScreen(page, testInfo, value);
   }
   if (test.info().project.name === 'mobile') {
-    const widths = await page.locator('.panels').evaluate(el => ({ panel: el.clientWidth, children: [...el.children].map(child => child.getBoundingClientRect().width) }));
+    const widths = await page.locator('.panels').evaluate(el => ({ panel: el.clientWidth, children: [...el.children].filter(child => child.id !== "panel-resizer").map(child => child.getBoundingClientRect().width) }));
     for (const width of widths.children) expect(Math.abs(width - widths.panel)).toBeLessThanOrEqual(1);
   }
   const initialZoom = await page.locator('#zoom-value').textContent();
@@ -142,4 +142,49 @@ test('diagram grows with page and manual zoom survives layout changes', async ({
   await page.locator('#diagram-view').click();
   await expect(page.locator('.code-panel')).toBeVisible();
   await expect(page.locator('#source')).toHaveValue(/Diagramma verticale/);
+});
+
+
+test('ready blocks insert unique code and update the diagram with live paused', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await ready(page, 'Architettura di rete');
+  await page.locator('#live').uncheck();
+  const original = await page.locator('#source').inputValue();
+  await page.getByRole('button', { name: 'Aggiungi Server', exact: true }).click();
+  await ready(page, 'Architettura di rete');
+  await expect(page.locator('#source')).toHaveValue(/server server1 "Server"/);
+  await expect(page.locator('#diagram-info')).toHaveText('7 elementi · 5 collegamenti');
+  await page.getByRole('button', { name: 'Aggiungi Server', exact: true }).click();
+  await ready(page, 'Architettura di rete');
+  await expect(page.locator('#source')).toHaveValue(/server server2 "Server"/);
+  await expect(page.locator('#diagram-info')).toHaveText('8 elementi · 5 collegamenti');
+  expect((await page.locator('#source').inputValue()).includes(original.slice(0, original.lastIndexOf('}')))).toBe(true);
+  await attachScreen(page, testInfo, 'ready-blocks');
+  await page.locator('#source').fill('diagram "Errore" {\n a -> mancante\n}');
+  const invalid = await page.locator('#source').inputValue();
+  await page.getByRole('button', { name: 'Aggiungi Database', exact: true }).click();
+  await expect(page.locator('#message')).toContainText('Blocco non inserito');
+  await expect(page.locator('#source')).toHaveValue(invalid);
+});
+
+test('splitter resizes editor and refits diagram by keyboard and pointer', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Stacked panels on narrow screens');
+  await page.goto('/');
+  await ready(page, 'Architettura di rete');
+  const separator = page.getByRole('separator', { name: 'Larghezza del codice' });
+  const editor = page.locator('.code-panel');
+  const before = await editor.boundingBox();
+  const zoom = await page.locator('#zoom-value').textContent();
+  await separator.focus();
+  await separator.press('ArrowRight');
+  await expect.poll(async () => (await editor.boundingBox()).width).toBeGreaterThan(before.width);
+  await expect(page.locator('#zoom-value')).not.toHaveText(zoom);
+  const handle = await separator.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(handle.x - 120, handle.y + 100, { steps: 8 });
+  await page.mouse.up();
+  expect((await editor.boundingBox()).width).toBeLessThan(before.width);
+  expect(await page.locator('body').evaluate(el => el.classList.contains('resizing'))).toBe(false);
+  await attachScreen(page, testInfo, 'resized-panels');
 });

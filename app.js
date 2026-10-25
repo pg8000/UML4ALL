@@ -141,6 +141,64 @@
     $('diagram-view').setAttribute('aria-pressed', String(expanded));
     $('diagram-view').textContent = expanded ? 'Mostra codice' : 'Solo diagramma';
   });
+  const panels = $('diagram-panels'), resizer = $('panel-resizer');
+  function resizeEditor(clientX) {
+    const bounds = panels.getBoundingClientRect();
+    const min = Math.max(220, bounds.width * .2);
+    const max = Math.min(bounds.width * .7, bounds.width - 292);
+    const width = Math.max(min, Math.min(max, clientX - bounds.left));
+    panels.style.setProperty('--editor-width', width + 'px');
+    resizer.setAttribute('aria-valuenow', String(Math.round(width / bounds.width * 100)));
+    fitToWidth = true;
+    fit();
+  }
+  resizer.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    resizer.setPointerCapture(event.pointerId);
+    document.body.classList.add('resizing');
+  });
+  resizer.addEventListener('pointermove', event => {
+    if (resizer.hasPointerCapture(event.pointerId)) resizeEditor(event.clientX);
+  });
+  for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+    resizer.addEventListener(name, event => {
+      document.body.classList.remove('resizing');
+      if (resizer.hasPointerCapture(event.pointerId)) resizer.releasePointerCapture(event.pointerId);
+    });
+  }
+  resizer.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const bounds = panels.getBoundingClientRect();
+    let x = document.querySelector('.code-panel').getBoundingClientRect().right;
+    if (event.key === 'Home') x = bounds.left;
+    else if (event.key === 'End') x = bounds.right;
+    else x += (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 60 : 20);
+    resizeEditor(x);
+  });
+  for (const block of UML4ALLBlocks.catalog) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Aggiungi ' + block.label);
+    const icon = document.createElement('span');
+    icon.className = 'block-icon ' + block.kind;
+    icon.setAttribute('aria-hidden', 'true');
+    button.append(icon, document.createTextNode(block.label));
+    button.addEventListener('click', () => {
+      try {
+        const inserted = UML4ALLBlocks.insert(source.value, block.kind);
+        source.value = inserted.source;
+        source.focus({ preventScroll: true });
+        source.setSelectionRange(inserted.start, inserted.end);
+        lines();
+        source.scrollTop = Math.max(0, (source.value.slice(0, inserted.start).split('\n').length - 4) * 23);
+        fitToWidth = true;
+        generate();
+      } catch (error) { showMessage('Blocco non inserito. ' + error.message); }
+    });
+    $('block-list').append(button);
+  }
   // Height now follows the image. Observe width only, and preserve manual zoom.
   let previewWidth = 0;
   new ResizeObserver(() => {
