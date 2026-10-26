@@ -82,3 +82,17 @@ test('focused and long diagram titles fit the SVG header without covering nodes'
   assert.ok(long.model.nodes[0].ay>lastBaseline+10);
   for(const line of long.model.headerLines) assert.ok(line.length*8<=long.model.w-70);
 });
+test('type labels can be hidden without losing names, details or navigation ranges', async()=>{
+  const text='diagram "Navigazione" {\n group "Reparto" {\n server app "Applicazione" {\n note = "Test"\n }\n }\n}';
+  const shown=await render(text,'full'),hidden=await render(text,'full',{showTypes:false});
+  assert.match(shown.svg,/>SERVER<\/text>/);
+  assert.doesNotMatch(hidden.svg,/>SERVER<\/text>/);
+  assert.match(hidden.svg,/>Applicazione<\/text>/);
+  assert.match(hidden.svg,/>Test<\/text>/);
+  assert.deepEqual(engine.sourceTargets(hidden.model),engine.sourceTargets(shown.model));
+  assert.deepEqual(engine.sourceTargets(hidden.model).map(t=>[t.label,t.line,t.endLine]),[['Reparto',2,6],['Applicazione',3,5]]);
+  const overview=await render(text,'overview',{showTypes:false});
+  assert.deepEqual(engine.sourceTargets(overview.model).map(t=>[t.label,t.line,t.endLine]),[['Reparto',2,6]]);
+  assert.doesNotMatch(overview.svg,/>NODE<\/text>/);
+  assert.match(overview.svg,/>1 elementi<\/text>/);
+});

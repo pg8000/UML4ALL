@@ -19,7 +19,7 @@
         let count = 0, color;
         function collect(c) { for (const child of c.children) { if (child.type === 'group') collect(child); else { mapping.set(child.id, 'view:group:' + item.line); count++; color ||= child.props.color; } } }
         collect(item);
-        const node = { type: 'element', kind: 'node', id: 'view:group:' + item.line, label: item.label, props: { note: count + ' elementi', ...(color ? { color } : {}) }, parent, line: item.line };
+        const node = { type: 'element', kind: 'node', id: 'view:group:' + item.line, label: item.label, props: { note: count + ' elementi', ...(color ? { color } : {}) }, parent, line: item.line, endLine: item.endLine };
         parent.children.push(node); base.nodes.push(node); base.byId.set(node.id, node);
       } else if (item.type === 'group') {
         const group = { ...item, parent, children: [] };
@@ -53,10 +53,10 @@
     const notice = selected === 'overview' ? 'Panoramica: ' + original.nodes.length + ' elementi riassunti per gruppo. Collegamenti interni nascosti e collegamenti esterni equivalenti accorpati. Scegli Dettaglio completo o un gruppo per leggere tutte le attività.' : 'Vista del gruppo: solo attività e collegamenti interni. Il codice completo resta invariato.';
     return { model: base, choices, notice };
   }
-  async function render(source, view = 'full') {
+  async function render(source, view = 'full', options = {}) {
     const projected = project(engine.parse(source), view);
     const model = engine.layout(projected.model);
-    if (model.layout === 'simple') return { ...engine.renderModel(model), choices: projected.choices, notice: projected.notice };
+    if (model.layout === 'simple') return { ...engine.renderModel(model, options), choices: projected.choices, notice: projected.notice };
     const gap = { compact: 24, normal: 40, wide: 64 }[model.spacing];
     const objects = new Map(), edges = new Map();
     let groupNumber = 0;
@@ -126,7 +126,7 @@
       }
     }
     if (collected.length !== model.edges.length || ![model.w, model.h].every(n => Number.isFinite(n) && n > 0 && n <= 1000000)) throw new Error('Layout non valido.');
-    return { ...engine.renderModel(model), choices: projected.choices, notice: projected.notice };
+    return { ...engine.renderModel(model, options), choices: projected.choices, notice: projected.notice };
   }
   const api = Object.freeze({ render });
   if (common) module.exports = api; else root.UML4ALLLayout = api;

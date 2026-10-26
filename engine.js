@@ -48,7 +48,7 @@
       }
       if (closed) fail(n, 'Codice dopo la chiusura del diagramma.');
       const parent = stack[stack.length - 1];
-      if (t.length === 1 && is(0, '}')) { stack.pop(); if (!stack.length) closed = true; return; }
+      if (t.length === 1 && is(0, '}')) { stack.pop().endLine = n; if (!stack.length) closed = true; return; }
       if (parent.type === 'element') {
         if (!(t.length === 3 && id(0) && is(1, '=') && (ts[2].quoted || id(2)))) fail(n, 'Proprietà attesa: nome = "valore"');
         if (!PROPS.has(t[0])) fail(n, 'Proprietà sconosciuta: ' + t[0]);
@@ -160,8 +160,8 @@
     function absolute(c, ox, oy) { c.ax = ox + (c.x || 0); c.ay = oy + (c.y || 0); if (c.children) c.children.forEach(n => absolute(n, c.ax, c.ay)); }
     absolute(model, 0, 0); return model;
   }
-  function render(source) { return renderModel(layout(parse(source))); }
-  function renderModel(model) {
+  function render(source, options) { return renderModel(layout(parse(source)), options); }
+  function renderModel(model, options = {}) {
     const parts = []; let outputSize = 0;
     const add = s => { outputSize += s.length; if (outputSize > LIMITS.svg) fail(1, 'Il diagramma generato supera il limite di 2 MB.'); parts.push(s); };
     add(`<svg xmlns="http://www.w3.org/2000/svg" width="${model.w}" height="${model.h}" viewBox="0 0 ${model.w} ${model.h}" role="img" aria-labelledby="diagram-title"><title id="diagram-title">${esc(model.title)}</title><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9" fill="none" stroke="#6b8879" stroke-width="1.6"/></marker></defs><rect width="100%" height="100%" fill="#fcfdfb" rx="10"/>`);
@@ -196,7 +196,7 @@
       else add(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${['start', 'end', 'cloud'].includes(n.kind) ? 30 : 8}" fill="${n.props.color || fill}" stroke="${stroke}" stroke-width="${n.kind === 'end' ? 2.5 : 1.2}"/>`);
       if (n.kind === 'database') add(`<path d="M${x} ${y + 14} Q${x + w / 2} ${y + 29} ${x + w} ${y + 14}" fill="none" stroke="${stroke}"/>`);
       const base = n.kind === 'decision' ? y + h / 2 - (n.labelLines.length * 17 + n.detailLines.length * 15) / 2 + 8 : y + 38;
-      if (n.kind !== 'decision') add(`<text x="${x + w / 2}" y="${y + 18}" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8" letter-spacing="1.2" fill="${ink}">${esc(n.kind.toUpperCase())}</text>`);
+      if (n.kind !== 'decision' && options.showTypes !== false) add(`<text x="${x + w / 2}" y="${y + 18}" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="8" letter-spacing="1.2" fill="${ink}">${esc(n.kind.toUpperCase())}</text>`);
       n.labelLines.forEach((line, i) => add(`<text x="${x + w / 2}" y="${base + i * 17}" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="600" fill="#294536">${esc(line)}</text>`));
       n.detailLines.forEach((line, i) => add(`<text x="${x + w / 2}" y="${base + n.labelLines.length * 17 + 6 + i * 15}" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="10" fill="#74846e">${esc(line)}</text>`));
       add('</g>');
@@ -204,7 +204,19 @@
     labels.forEach(add); add('</svg>');
     return { svg: parts.join(''), model };
   }
-  const api = Object.freeze({ parse, layout, render, renderModel, wrap, LIMITS });
+  function sourceTargets(model) {
+    const targets = [];
+    function visit(container) {
+      for (const item of container.children || []) {
+        const group = item.type === 'group';
+        targets.push({ label: item.label, line: item.line, endLine: item.endLine || item.line,
+          x: item.ax, y: item.ay, w: item.w, h: group ? Math.min(34, item.h) : item.h });
+        if (group) visit(item);
+      }
+    }
+    visit(model); return targets;
+  }
+  const api = Object.freeze({ parse, layout, render, renderModel, sourceTargets, wrap, LIMITS });
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.UML4ALL = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

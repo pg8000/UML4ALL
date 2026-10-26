@@ -27,11 +27,30 @@
     $('line-numbers').textContent = Array.from({ length: Math.min(UML4ALL.LIMITS.lines, source.value.split('\n').length) }, (_, i) => i + 1).join('\n');
     $('line-numbers').scrollTop = source.scrollTop; cursor();
   }
+  function selectSource(target) {
+    if (source.value !== renderedSource) {
+      showMessage('Genera il diagramma aggiornato prima di individuare il codice.');
+      return;
+    }
+    const rows = source.value.split('\n');
+    const start = rows.slice(0, target.line - 1).reduce((sum, row) => sum + row.length + 1, 0);
+    const end = rows.slice(0, target.endLine).reduce((sum, row) => sum + row.length + 1, 0) - 1;
+    document.querySelector('.workspace').classList.remove('diagram-only');
+    $('diagram-view').setAttribute('aria-pressed', 'false');
+    $('diagram-view').textContent = 'Solo diagramma';
+    source.focus({ preventScroll: true });
+    source.setSelectionRange(start, Math.min(source.value.length, end));
+    source.scrollTop = Math.max(0, (target.line - 3) * 23);
+    source.scrollLeft = 0;
+    source.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    $('line-numbers').scrollTop = source.scrollTop;
+    cursor();
+  }
   function scale() {
     if (!result) return;
-    const svg = preview.querySelector('img');
-    svg.style.width = result.model.w * zoom + 'px';
-    svg.style.height = result.model.h * zoom + 'px';
+    const stage = preview.querySelector('.diagram-stage');
+    stage.style.width = result.model.w * zoom + 'px';
+    stage.style.height = result.model.h * zoom + 'px';
     $('zoom-value').textContent = Math.round(zoom * 100) + '%';
   }
   function fit() {
@@ -67,7 +86,27 @@
         const url = URL.createObjectURL(new Blob([safe], { type: 'image/svg+xml' }));
         image.src = url;
         // SVG is displayed in image mode, never inserted as active page markup.
-        preview.replaceChildren(image);
+        const stage = document.createElement('div');
+        stage.className = 'diagram-stage';
+        stage.append(image);
+        // Source navigation uses native HTML buttons; the SVG stays an inert image.
+        for (const target of output.targets || []) {
+          if (![target.x, target.y, target.w, target.h].every(Number.isFinite) ||
+              target.x < 0 || target.y < 0 || target.w <= 0 || target.h <= 0 ||
+              target.x + target.w > output.model.w + 1 || target.y + target.h > output.model.h + 1 ||
+              !Number.isInteger(target.line) || !Number.isInteger(target.endLine) || target.line < 1 || target.endLine < target.line || target.endLine > UML4ALL.LIMITS.lines) continue;
+          const button = document.createElement('button');
+          button.type = 'button'; button.className = 'diagram-target';
+          button.setAttribute('aria-label', 'Vai al codice: ' + String(target.label).slice(0, 300));
+          button.title = 'Vai al codice · riga ' + target.line;
+          button.style.left = target.x / output.model.w * 100 + '%';
+          button.style.top = target.y / output.model.h * 100 + '%';
+          button.style.width = target.w / output.model.w * 100 + '%';
+          button.style.height = target.h / output.model.h * 100 + '%';
+          button.addEventListener('click', () => selectSource(target));
+          stage.append(button);
+        }
+        preview.replaceChildren(stage);
         if (previewURL) URL.revokeObjectURL(previewURL);
         previewURL = url;
         result = { svg: safe, model: output.model };
@@ -88,19 +127,19 @@
     if (snapshot.length > MAX_SOURCE) { failed(new Error('Il codice supera il limite di 100.000 caratteri.')); return; }
     // Browsers disallow workers for file: URLs; bounded local rendering preserves offline use.
     if (location.protocol === 'file:') {
-      try { const output = UML4ALL.render(snapshot); completed({ svg: output.svg, model: { title: output.model.title, w: output.model.w, h: output.model.h, nodeCount: output.model.nodes.length, edgeCount: output.model.edges.length } }); }
+      try { const output = UML4ALL.render(snapshot, { showTypes: $('show-types').checked }); completed({ svg: output.svg, targets: UML4ALL.sourceTargets(output.model), model: { title: output.model.title, w: output.model.w, h: output.model.h, nodeCount: output.model.nodes.length, edgeCount: output.model.edges.length } }); }
       catch (error) { failed(error); }
       return;
     }
     try {
-      worker = new Worker('render-worker.js?v=0.4.3');
+      worker = new Worker('render-worker.js?v=0.5.0');
       worker.onmessage = event => {
         if (event.data.ok) completed(event.data);
         else failed(event.data.error || new Error('Generazione non riuscita.'));
       };
       worker.onerror = () => failed(new Error('Motore di disegno non disponibile. Ricarica la pagina e riprova.'));
       workerTimer = setTimeout(() => failed(new Error('Elaborazione interrotta dopo 3 secondi. Riduci la complessità del diagramma.')), 3000);
-      worker.postMessage({ source: snapshot, view: $('diagram-scope').value });
+      worker.postMessage({ source: snapshot, view: $('diagram-scope').value, showTypes: $('show-types').checked });
     } catch (error) { failed(new Error('Impossibile avviare il motore di disegno. Usa un browser aggiornato.')); }
   }
   function changed() {
@@ -132,6 +171,7 @@
   $('live').addEventListener('change', () => { clearTimeout(timer); if ($('live').checked) generate(); });
   $('example').addEventListener('change', e => { $('diagram-scope').value = 'auto'; load(UML4ALLExamples[e.target.value]); });
   $('diagram-scope').addEventListener('change', () => { fitToWidth = true; generate(); });
+  $('show-types').addEventListener('change', generate);
   $('save-button').addEventListener('click', () => download(source.value, 'text/plain;charset=utf-8', '.ret'));
   $('export-button').addEventListener('click', () => { if (result && renderedSource === source.value) download(result.svg, 'image/svg+xml;charset=utf-8', '.svg'); });
   $('zoom-in').addEventListener('click', () => { fitToWidth = false; zoom = Math.min(3, zoom * 1.2); scale(); });
