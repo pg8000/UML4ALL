@@ -1,0 +1,33 @@
+diagram "Lotti sintetici" {
+direction right
+group "Lotto 0" {
+node n0 "Attività 0"
+node n1 "Attività 1"
+}
+group "Lotto 1" {
+node n3 "Attività 3"
+node n4 "Attività 4"
+}
+group "Lotto 2" {
+node n6 "Attività 6"
+node n8 "Attività 8"
+}
+group "Lotto 3" {
+node n9 "Attività 9"
+node n11 "Attività 11"
+}
+group "Lotto 4" {
+node n12 "Attività 12"
+node n13 "Attività 13"
+node n14 "Attività 14"
+}
+n11 -> n12 : "Flusso 0"
+n4 -> n12 : "Flusso 1"
+n6 -> n9 : "Flusso 11"
+n14 -> n3 : "Flusso 13"
+n6 -> n0 : "Flusso 14"
+n1 -> n12 : "Flusso 15"
+n1 -> n8 : "Flusso 16"
+n8 -> n0 : "Flusso 17"
+n13 -> n14 : "Flusso 18"
+}

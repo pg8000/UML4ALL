@@ -264,3 +264,27 @@ test('type toggle, source navigation and stale preview protection', async ({ pag
   await expect(page.locator('#source')).toBeFocused();
   await attachScreen(page, testInfo, 'source-navigation');
 });
+test('compound hitbox recovery preserves grouped source and exports within the worker deadline', async ({ page }, testInfo) => {
+  const source = await fs.readFile(require.resolve('../../tests/fixtures/compound-hitboxes.ret'),'utf8');
+  await page.goto('/');
+  await ready(page,'Architettura di rete');
+  await page.locator('#source').fill(source);
+  await ready(page,'Lotti sintetici');
+  await expect(page.locator('#diagram-info')).toHaveText('11 elementi · 9 collegamenti');
+  await expect(page.locator('#view-notice')).toContainText('spaziatura di compatibilità');
+  await expect(page.locator('#message')).toBeEmpty();
+  await expect(page.locator('#source')).toHaveValue(source);
+  await expect(page.locator('.diagram-target')).toHaveCount(16);
+  const svgEvent = page.waitForEvent('download');
+  await page.locator('#export-button').click();
+  const svg = await fs.readFile(await (await svgEvent).path(),'utf8');
+  expect(svg).toContain('Lotto 4');
+  expect(svg).toContain('Flusso 18');
+  expect(await page.evaluate(value => UML4ALLSafeSVG.validate(value) === value, svg)).toBe(true);
+  await page.getByRole('button',{name:'Vai al codice: Lotto 0',exact:true}).click();
+  expect(await page.locator('#source').evaluate(el=>el.value.slice(el.selectionStart,el.selectionEnd))).toBe('group "Lotto 0" {\nnode n0 "Attività 0"\nnode n1 "Attività 1"\n}');
+  const retEvent=page.waitForEvent('download');
+  await page.locator('#save-button').click();
+  expect(await fs.readFile(await (await retEvent).path(),'utf8')).toBe(source);
+  await attachScreen(page,testInfo,'compound-recovery');
+});

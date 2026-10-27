@@ -99,8 +99,22 @@
       const lines = engine.wrap(edge.label, 21);
       return { id, sources: ['n:' + edge.from], targets: ['n:' + edge.to], ...(edge.label ? {labels: [{text: edge.label, width: Math.max(...lines.map(s => s.length)) * 6 + 12, height: lines.length * 14 + 4}]} : {}) };
     });
-    const elk = new ELK();
-    const output = await elk.layout(input);
+    let output, recovered = false;
+    try {
+      output = await new ELK().layout(JSON.parse(JSON.stringify(input)));
+    } catch (error) {
+      // ELK's optional scanline post-compaction can fail on valid compound graphs.
+      // Retry only that known internal failure, from pristine input in a new engine.
+      // The surrounding disposable worker still enforces the same total 3s deadline.
+      if (!/Invalid hitboxes for scanline (?:constraint|overlap) calculation\./.test(String(error.message))) throw error;
+      function skipCompaction(item) {
+        if (item.layoutOptions) item.layoutOptions['elk.layered.compaction.postCompaction.strategy'] = 'NONE';
+        for (const child of item.children || []) skipCompaction(child);
+      }
+      skipCompaction(input);
+      output = await new ELK().layout(input);
+      recovered = true;
+    }
     const collected = [], positions = new Map();
     function apply(item, ox, oy) {
       const x = ox + (item.x || 0), y = oy + (item.y || 0), object = objects.get(item.id);
@@ -126,7 +140,8 @@
       }
     }
     if (collected.length !== model.edges.length || ![model.w, model.h].every(n => Number.isFinite(n) && n > 0 && n <= 1000000)) throw new Error('Layout non valido.');
-    return { ...engine.renderModel(model, options), choices: projected.choices, notice: projected.notice };
+    const notice = [projected.notice, recovered ? 'Disegno generato con spaziatura di compatibilità; gruppi e collegamenti conservati.' : ''].filter(Boolean).join(' ');
+    return { ...engine.renderModel(model, options), choices: projected.choices, notice };
   }
   const api = Object.freeze({ render });
   if (common) module.exports = api; else root.UML4ALLLayout = api;

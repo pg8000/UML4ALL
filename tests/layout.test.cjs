@@ -96,3 +96,15 @@ test('type labels can be hidden without losing names, details or navigation rang
   assert.doesNotMatch(overview.svg,/>NODE<\/text>/);
   assert.match(overview.svg,/>1 elementi<\/text>/);
 });
+test('valid compound graph recovers from scanline hitbox failure without removing groups or connections', async()=>{
+  const source=fs.readFileSync(require.resolve('./fixtures/compound-hitboxes.ret'),'utf8');
+  const result=await render(source,'full');
+  assert.equal(result.model.nodes.length,11);
+  assert.equal(result.model.edges.length,9);
+  assert.equal(result.model.children.filter(c=>c.type==='group').length,5);
+  assert.match(result.notice,/compatibilità/);
+  verify(result.model);
+  const targets=engine.sourceTargets(result.model);
+  assert.equal(targets.length,16);
+  assert.equal(targets.find(t=>t.label==='Lotto 0').line,3);
+});
