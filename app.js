@@ -163,7 +163,7 @@
   source.addEventListener('scroll', () => { $('line-numbers').scrollTop = source.scrollTop; });
   source.addEventListener('click', cursor); source.addEventListener('keyup', cursor);
   source.addEventListener('keydown', e => {
-    if (e.key === 'Tab') { e.preventDefault(); const start = source.selectionStart; source.setRangeText('  ', start, source.selectionEnd, 'end'); changed(); }
+    if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); const start = source.selectionStart; source.setRangeText('  ', start, source.selectionEnd, 'end'); changed(); }
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); $('save-button').click(); }
   });

@@ -263,6 +263,13 @@ test('type toggle, source navigation and stale preview protection', async ({ pag
   expect(engine.parse('diagram "Selezione" {\n'+groupCode+'\n}').nodes.length).toBe(5);
   await expect(page.locator('#source')).toBeFocused();
   await attachScreen(page, testInfo, 'source-navigation');
+  // A diagram click selects code. Leaving the editor must not replace that selection.
+  const beforeExit = await page.locator('#source').inputValue();
+  await page.locator('#source').press('Shift+Tab');
+  await expect(page.locator('#live')).toBeFocused();
+  await expect(page.locator('#source')).toHaveValue(beforeExit);
+  expect(await page.evaluate(() => localStorage.getItem('uml4all.source.v1'))).toBe(beforeExit);
+  await expect(page.locator('#render-status')).toHaveText('Aggiornato');
 });
 test('compound hitbox recovery preserves grouped source and exports within the worker deadline', async ({ page }, testInfo) => {
   const source = await fs.readFile(require.resolve('../../tests/fixtures/compound-hitboxes.ret'),'utf8');
